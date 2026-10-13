@@ -1,0 +1,10 @@
+# keep the repo thin: only the notebook, its layout, and docs
+data/
+.venv/
+__pycache__/
+__marimo__/
+.python-version
+pyproject.toml
+uv.lock
+proto_*.py
+precompute_*.py
