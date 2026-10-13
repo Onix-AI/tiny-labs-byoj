@@ -148,7 +148,11 @@ def _(mo):
     - Had to fine-tune for every use-case
     - Training data was **really hard** to get
     """),
-                mo.image(src="public/figures/covid-qa-schematic.png", width="100%"),
+                mo.image(
+                    src="public/figures/covid-qa-schematic.png",
+                    # cap the height so the slide fits (a 16:9 slide is 56.25cqw tall)
+                    style={"max-height": "28cqw", "width": "auto", "max-width": "100%"},
+                ),
             ],
             widths=[1, 1.4],
             align="center",

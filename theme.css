@@ -66,10 +66,3 @@
 .mo-slides-theme pre {
   margin: 0.6em 0 !important;
 }
-
-/* COVID figure: cap its height so the slide fits (a 16:9 slide is 56.25cqw tall). */
-.mo-slides-theme img[src*="covid-qa-schematic"] {
-  max-height: 32cqw;
-  width: auto !important;
-  max-width: 100%;
-}
