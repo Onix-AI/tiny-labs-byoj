@@ -6,6 +6,7 @@
       {
         "speakerNotes": "Hook. Ask the room how many of their LLM calls end in a branch."
       },
+      {},
       {
         "speakerNotes": "if x > 5 is code. if customer_is_angry needs a model. A semantic condition is a classifier."
       },
@@ -21,6 +22,8 @@
       {
         "speakerNotes": "Live: drag the temperature. Raw post-RLHF logprobs are overconfident; one temperature fitted on ~100 gold labels fixes most of it (Guo et al. 2017)."
       },
+      {},
+      {},
       {
         "speakerNotes": "Covid callback: the 2019 lesson still holds. Calibration is not robustness."
       }

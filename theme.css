@@ -1,0 +1,37 @@
+/* Deck theme. Applies to the slides view (reveal.js). */
+
+/* Tiny logo in the bottom-right corner of every slide... */
+.reveal .slides > section::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 48px;
+  height: 48px;
+  background: url("./public/onix-tiny-labs.png") center / contain no-repeat;
+  border-radius: 8px;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ...except the title slide, which already shows it large. */
+.reveal .slides > section:first-of-type::after {
+  display: none;
+}
+
+/* Fonts (editor + slides): monospace for text, sans-serif for headers... */
+.markdown,
+.markdown * {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6),
+.markdown :is(h1, h2, h3, h4, h5, h6) * {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ...except the title slide: all mono, like the "tiny labs" logo. */
+[data-cell-name="title"] .markdown :is(h1, h2, h3, h4, h5, h6),
+[data-cell-name="title"] .markdown :is(h1, h2, h3, h4, h5, h6) * {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
+}

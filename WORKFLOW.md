@@ -1,6 +1,6 @@
 # Workflow
 
-Slides and demo are one marimo notebook: `slides.py` (cells) + `layouts/slides.slides.json` (slide types, speaker notes; matched to cells by order).
+Slides and demo are one marimo notebook: `slides.py` (cells) + `layouts/slides.slides.json` (slide types; matched to cells by order).
 
 ## Setup (once)
 
@@ -14,12 +14,13 @@ cd tiny-labs-byoj
 ## Edit
 
 ```bash
-uvx marimo edit --sandbox slides.py
+uvx marimo edit --sandbox --watch slides.py
 ```
 
+- Edit `slides.py` in any editor (vim, etc.): every save re-renders the affected slides live in the browser (`--watch` + `watcher_on_save = "autorun"` in the script header).
+- Slide text in the editor; structure (order, sub-slides, fragments) in the browser.
 - Cmd-K → "Slides" for the deck view. Arrows: left/right = main path, up/down = sub-slides.
-- Saving in the browser writes `slides.py` and `layouts/`. If the files change on disk, marimo prompts to reload.
-- `S` opens speaker view.
+- Saving in the browser writes `slides.py` and `layouts/`.
 
 ## Present / export
 

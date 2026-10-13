@@ -1,13 +1,20 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = ["marimo"]
+#
+# [tool.marimo.runtime]
+# watcher_on_save = "autorun"
 # ///
 """BYOJ talk: WIP slides draft. Slides layout lives in layouts/slides.slides.json."""
 
 import marimo
 
 __generated_with = "0.25.1"
-app = marimo.App(width="medium", layout_file="layouts/slides.slides.json")
+app = marimo.App(
+    width="medium",
+    layout_file="layouts/slides.slides.json",
+    css_file="theme.css",
+)
 
 
 @app.cell
@@ -20,12 +27,29 @@ def _():
 
 
 @app.cell
-def _(mo):
-    mo.md(r"""
-    # Bring Your Own Jev
+def title(mo):
+    mo.hstack(
+        [
+            mo.vstack(
+                [
+                    mo.md("# Bring Your Own Jev"),
+                    mo.md("@jerpint, Jeremy Pinto"),
+                ],
+                gap=0.5,
+            ),
+            mo.image(src="public/onix-tiny-labs.png", width=400, rounded=True),
+        ],
+        justify="space-between",
+        align="center",
+    )
+    return
 
-    *Most of your LLM calls are just if-statements.*
-    """)
+
+@app.cell
+def _(mo):
+    # Full-slide image, synced from Google Slides. Re-renders when the file is updated.
+    _slide = mo.watch.file("public/memes/decision-models.png")
+    mo.image(_slide.read_bytes(), width="100%")
     return
 
 
@@ -34,10 +58,15 @@ def _(mo):
     mo.md(r"""
     ## What is a decision?
 
+    A decision can be summarized as: given an observation, how do I act?
+
     ```python
 
-    def decide(observation) -> bool:
-        ...
+    def decide(observations: dict) -> bool:
+        '''Make a decision given the observations.'''
+
+        return observations["value"] > MAXIMUM_ALLOWED_VALUE
+
 
     decision = decide(observation)
 
@@ -102,6 +131,33 @@ def _(math, mo, temperature):
         temperature,
         mo.md(f"| option | P(option) |\n|---|---|\n{bars}"),
     ])
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Everyone can build one: the Jev Decision Index
+
+    [Community leaderboard](https://huggingface.co/spaces/multimodalart/jev-decision-index) of open Jev reproductions (snapshot 2026-10-12):
+
+    - **148** models scored on 37 public benchmarks + private tests
+    - **7** open models already beat Jev
+    - **AnyJev L0 · Gemma-4-31B** (logit readout, *no training*) ties Jev: 60.2 vs 60.1, but calibration error **0.24** vs **0.07**
+
+    *Structured output + logprobs gets you the accuracy. Calibration makes it a Jev.*
+
+    📚 Every reproduction, trick and explainer in one place: [the Jev reproductions tracker](https://multimodalart-jev-decision-index.static.hf.space/news.html) (~65 entries)
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.Html(
+        '<iframe src="https://multimodalart-jev-decision-index.static.hf.space/index.html" '
+        'style="width:100%;height:75vh;border:0;border-radius:8px"></iframe>'
+    )
     return
 
 
