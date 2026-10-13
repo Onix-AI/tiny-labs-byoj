@@ -70,7 +70,7 @@ def _(mo):
     decision = decide(observations)
 
     if decision:
-        print("Do expensive thing")
+        print("Do the thing")
     else:
         print("Do other thing")
     ```
@@ -119,12 +119,11 @@ def _(mo):
 
         # no threshold to compare against so you guess some heuristics
         keywords = ["health", "wellness"]
-        if observations["user_input"] in keywords:
-            return True
-        return False
+        return any(k in observations["question"].lower() for k in keywords)
 
 
-    decision = decide({"question": "Can you help me reset my password?"})
+    question = "Can you help me reset my password?"
+    decision = decide({"question": question})
 
     if decision:
         print(ask_expensive_bot(question))
@@ -139,15 +138,15 @@ def _(mo):
 def _(mo):
     mo.vstack([
         mo.md(r"""
-    ## "Decision model" in 2020 (it was bad)
+    ## "Decision model" in 2020 (it was hard)
 
     COVID-19 Q&A: map a user's question to a pre-canned FAQ answer... **if it's relevant**.
     """),
         mo.hstack(
             [
                 mo.md(r"""
-    - Fine-tuned **BERT**, specific to this one use case
-    - Out-of-distribution training data was **really hard** to get
+    - Had to fine-tune for every use-case
+    - Training data was **really hard** to get
     """),
                 mo.image(src="public/figures/covid-qa-schematic.png", height=380),
             ],
@@ -158,6 +157,87 @@ def _(mo):
     <small>Bronzi, Pinto, Ghosn, Subakan, Sharma, Lu, Reddy. *A Question Answering System in Response to the COVID-19 Crisis.* [Montreal AI Symposium 2020](https://montrealaisymposium.wordpress.com/accepted-submissions-2020/)</small>
     """),
     ])
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## LLMs changed the game
+
+    You could now just *ask* a model, with the right context:
+
+    ```python
+
+    prompt = f'''Is this question about health and wellness?
+    Question: {question}
+
+    Answer in JSON: {{"relevant": true | false}}
+    PLEASE OUTPUT VALID JSON OR I LOSE MY JOB'''
+
+    response = client.chat.completions.create(
+        model="any-llm",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    decision = json.loads(response.choices[0].message.content)["relevant"]
+    ```
+
+    Works great... until it replies `Sure! Here's your JSON:`
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Structured outputs: the format is guaranteed
+
+    ```python
+
+    class Relevance(BaseModel):
+        relevant: bool
+
+
+    response = client.chat.completions.parse(
+        model="any-llm",
+        messages=[{"role": "user", "content": f"Is this about health and wellness? {question}"}],
+        response_format=Relevance,
+    )
+    decision = response.choices[0].message.parsed.relevant
+    ```
+
+    Valid JSON every time, no begging required.
+
+    But **how sure** is it?
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Structured output + logprobs is basically already Jev
+
+    ```python
+
+    response = client.chat.completions.parse(
+        model="any-llm",
+        messages=messages,
+        response_format=Relevance,
+        logprobs=True,
+        top_logprobs=2,  # also return the 2 most likely tokens + their logprobs
+    )
+
+    response.choices[0].message.parsed
+    # Relevance(relevant=True)   ← same answer whether it was 99% or 51% sure
+
+    # logprobs at the true / false token:
+    # [TopLogprob(token='true',  logprob=-0.03),   # ≈ 97%
+    #  TopLogprob(token='false', logprob=-3.5)]    # ≈ 3%
+    ```
+
+    Structured output picks the answer. **Logprobs tell you how sure it was.**
+    """)
     return
 
 
@@ -175,19 +255,6 @@ def _(mo):
     | **choice** | pick one of N | P over options |
     | **noul** | is this true? | P(yes) |
     | **score** | how much? | P over ordered levels |
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ## Structured output + logprobs is basically already Jev
-
-    1. generate text → parse
-    2. **structured output** → the format
-    3. **+ logprobs** → the distribution
-    4. **calibration** → a Jev
     """)
     return
 

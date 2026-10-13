@@ -35,3 +35,19 @@
 [data-cell-name="title"] .markdown :is(h1, h2, h3, h4, h5, h6) * {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
 }
+
+/* Slides are a fixed 16:9 frame that scrolls on overflow: keep code-heavy slides compact. */
+.mo-slides-theme pre,
+.mo-slides-theme pre code {
+  font-size: 1.05rem !important;
+  line-height: 1.35 !important;
+}
+
+.mo-slides-theme pre {
+  margin: 0.5em 0 !important;
+}
+
+.mo-slides-theme h2 {
+  margin-top: 0 !important;
+  margin-bottom: 0.4em !important;
+}
