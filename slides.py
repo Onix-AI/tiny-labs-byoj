@@ -259,8 +259,8 @@ def _(mo):
             mo.md(r"""
     ## The problem: LLMs are slow and expensive deciders
 
-    - **Latency**: token by token, and maybe it *reasons* first: **seconds to minutes**
-    - **Model**: You don't need a model that can generate text, only that can **understand it**
+    - **Latency**: LLMs **generate** token by token (and may reason first), a decision only needs **one forward pass**
+    - **Model**: LLMs have to **generate** text, a decision only needs to **understand** it
     """),
             mo.vstack(
                 [
