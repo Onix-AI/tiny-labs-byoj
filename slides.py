@@ -4,6 +4,9 @@
 #
 # [tool.marimo.runtime]
 # watcher_on_save = "autorun"
+#
+# [tool.marimo.save]
+# autosave = "off"
 # ///
 """BYOJ talk: WIP slides draft. Slides layout lives in layouts/slides.slides.json."""
 
@@ -58,7 +61,29 @@ def _(mo):
     mo.md(r"""
     ## What is a decision?
 
-    A decision can be summarized as: given an observation, how do I act?
+    A decision can be summarized as:
+
+    > given an observation, which option should I pick?
+
+    ```python
+
+    decision = decide(observations)
+
+    if decision:
+        print("Do expensive thing")
+    else:
+        print("Do other thing")
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## What is a decision?
+
+    Deterministic decisions are easy, eg:
 
     ```python
 
@@ -68,14 +93,71 @@ def _(mo):
         return observations["value"] > MAXIMUM_ALLOWED_VALUE
 
 
-    decision = decide(observation)
+    decision = decide(observations)
 
     if decision:
-        print("Do thing")
+        print("Do expensive thing")
     else:
         print("Do other thing")
     ```
     """)
+    return
+
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## What is a decision?
+
+    Semantic decisions are harder to codify, eg:
+
+    ```python
+
+    def decide(observations: dict) -> bool:
+        '''Is the user's question relevant?'''
+
+        # no threshold to compare against so you guess some heuristics
+        keywords = ["health", "wellness"]
+        if observations["user_input"] in keywords:
+            return True
+        return False
+
+
+    decision = decide({"question": "Can you help me reset my password?"})
+
+    if decision:
+        print(ask_expensive_bot(question))
+    else:
+        print("Sorry, I can only help with health and wellness questions.")
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.vstack([
+        mo.md(r"""
+    ## "Decision model" in 2020 (it was bad)
+
+    COVID-19 Q&A: map a user's question to a pre-canned FAQ answer... **if it's relevant**.
+    """),
+        mo.hstack(
+            [
+                mo.md(r"""
+    - Fine-tuned **BERT**, specific to this one use case
+    - Out-of-distribution training data was **really hard** to get
+    """),
+                mo.image(src="public/figures/covid-qa-schematic.png", height=380),
+            ],
+            widths=[1, 1.4],
+            align="center",
+        ),
+        mo.md(r"""
+    <small>Bronzi, Pinto, Ghosn, Subakan, Sharma, Lu, Reddy. *A Question Answering System in Response to the COVID-19 Crisis.* [Montreal AI Symposium 2020](https://montrealaisymposium.wordpress.com/accepted-submissions-2020/)</small>
+    """),
+    ])
     return
 
 
