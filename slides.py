@@ -148,7 +148,7 @@ def _(mo):
     - Had to fine-tune for every use-case
     - Training data was **really hard** to get
     """),
-                mo.image(src="public/figures/covid-qa-schematic.png", height=380),
+                mo.image(src="public/figures/covid-qa-schematic.png", width="100%"),
             ],
             widths=[1, 1.4],
             align="center",
