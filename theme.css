@@ -66,3 +66,44 @@
 .mo-slides-theme pre {
   margin: 0.6em 0 !important;
 }
+
+/* Code blocks: One Light (vivid on a projector). */
+.codehilite {
+  background-color: #fafafa !important;
+  border: 1px solid #e5e5e6;
+  border-radius: 8px !important;
+}
+
+.codehilite,
+.codehilite :is(.n, .o, .p, .nn, .nv, .vc, .vg, .vi, .vm, .err) {
+  color: #383a42 !important;
+}
+
+.codehilite :is(.k, .kc, .kd, .kn, .kp, .kr, .ow) {
+  color: #a626a4 !important; /* keywords: def, if, return, in, True */
+}
+
+.codehilite :is(.s, .s1, .s2, .sa, .sb, .sc, .sd, .se, .sh, .sr, .ss, .sx, .dl, .l, .ld) {
+  color: #50a14f !important; /* strings */
+}
+
+.codehilite .si {
+  color: #e45649 !important; /* {interpolation} inside f-strings */
+}
+
+.codehilite :is(.m, .mb, .mf, .mh, .mi, .mo, .il, .no) {
+  color: #986801 !important; /* numbers, constants */
+}
+
+.codehilite :is(.bp, .nb, .kt) {
+  color: #0184bc !important; /* builtins: print, any, bool */
+}
+
+.codehilite :is(.nf, .fm, .nc, .nd, .ne, .na, .py, .nx, .nl, .nt) {
+  color: #4078f2 !important; /* function, class and decorator names */
+}
+
+.codehilite :is(.c, .c1, .ch, .cm, .cp, .cpf, .cs) {
+  color: #a0a1a7 !important; /* comments */
+  font-style: italic !important;
+}
