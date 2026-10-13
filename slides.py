@@ -17,6 +17,7 @@ app = marimo.App(
     width="medium",
     layout_file="layouts/slides.slides.json",
     css_file="theme.css",
+    html_head_file="head.html",
 )
 
 
@@ -186,7 +187,11 @@ def _(mo):
     decision = json.loads(response.choices[0].message.content)["relevant"]
     ```
 
-    Works great... until it replies `Sure! Here's your JSON:`
+    Works fine... until it replies
+
+    > `Sure! Here's your JSON:`
+
+    💀
     """)
     return
 
@@ -242,6 +247,34 @@ def _(mo):
 
     Structured output picks the answer. **Logprobs tell you how sure it was.**
     """)
+    return
+
+
+@app.cell
+def _(mo):
+    # Accuracy vs cost chart; re-renders when the file is updated.
+    _fig = mo.watch.file("public/figures/llm-latency-cost.jpg")
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## The problem: LLMs are slow and expensive deciders
+
+    - **Latency**: token by token, and maybe it *reasons* first: **seconds to minutes**
+    - **Model**: You don't need a model that can generate text, only that can **understand it**
+    """),
+            mo.vstack(
+                [
+                    mo.image(_fig.read_bytes(), style={"max-height": "30cqw", "width": "auto", "max-width": "100%"}),
+                    mo.md(r"""
+    <small>Source: [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), TypeSafe, Oct 12, 2026</small>
+    """),
+                ],
+                align="center",
+                gap=0.25,
+            ),
+        ],
+        gap=1.5,
+    )
     return
 
 

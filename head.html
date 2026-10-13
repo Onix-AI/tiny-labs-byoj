@@ -1,0 +1,37 @@
+<script>
+  // Slide numbers (1, 2, 3, ... in Space order, sub-slides included) in the
+  // bottom-left corner, so slides can be referred to by number.
+  (() => {
+    let queued = false;
+
+    function update() {
+      queued = false;
+      document.querySelectorAll(".reveal").forEach((reveal) => {
+        const slides = [...reveal.querySelectorAll(".slides section")].filter(
+          (s) => !s.querySelector("section"),
+        );
+        const current = slides.findIndex((s) => s.classList.contains("present"));
+        let badge = reveal.querySelector(":scope > .slide-num");
+        if (!badge) {
+          badge = document.createElement("div");
+          badge.className = "slide-num";
+          reveal.appendChild(badge);
+        }
+        const text = current >= 0 ? String(current + 1) : "";
+        if (badge.textContent !== text) badge.textContent = text;
+      });
+    }
+
+    new MutationObserver(() => {
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(update);
+      }
+    }).observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  })();
+</script>

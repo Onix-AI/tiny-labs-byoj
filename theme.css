@@ -107,3 +107,15 @@
   color: #a0a1a7 !important; /* comments */
   font-style: italic !important;
 }
+
+/* Slide number, bottom-left (set by head.html). */
+.slide-num {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  z-index: 30;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: max(12px, 1.2cqw);
+  color: #9ca3af;
+  pointer-events: none;
+}
