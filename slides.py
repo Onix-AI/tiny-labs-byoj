@@ -289,51 +289,142 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    # Full-slide image, synced from Google Slides (page 3). Re-renders when the file is updated.
-    _slide = mo.watch.file("public/figures/encoder-vs-decoder.png")
+    def decision_flow(stage):
+        """The "when to use a decision model" flowchart, revealed in stages.
+
+        1: decision model vs LLM. 2: + "what kind of answer?" (LLM greyed out).
+        3: + Noul / Choice / Score.
+        """
+        lines = [
+            "flowchart LR",
+            'Q{"Fixed set of options,<br/>known in advance?"}',
+            'Q -- "<b>yes</b>" --> D["<b>Decision model</b><br/>classification · true or false · choice"]',
+            'Q -- "<b>no</b>" --> L["<b>LLM</b><br/>text · code · open-ended"]',
+        ]
+        if stage >= 2:
+            lines.append('D --> T{"What kind<br/>of answer?"}')
+        if stage >= 3:
+            lines += [
+                'T -- "yes / no" --> N["<b>Noul</b><br/>P(yes)"]',
+                'T -- "one of N" --> C["<b>Choice</b><br/>P per option"]',
+                'T -- "a level on a scale" --> S["<b>Score</b><br/>P per level"]',
+            ]
+        lines += [
+            "classDef question fill:#ffffff,stroke:#383a42,stroke-width:2px,color:#383a42",
+            "classDef decision fill:#f6e9f6,stroke:#a626a4,stroke-width:2px,color:#383a42",
+            "classDef llm fill:#fdf3e1,stroke:#c18401,stroke-width:2px,color:#383a42",
+            "classDef muted fill:#f3f4f6,stroke:#d1d5db,stroke-width:2px,color:#9ca3af",
+            "class Q question",
+            "class D decision",
+        ]
+        if stage >= 2:
+            lines += [
+                "class T question",
+                "class L muted",
+                "linkStyle 1 stroke:#d1d5db,color:#9ca3af",  # the "no" arrow to the LLM
+            ]
+        else:
+            lines.append("class L llm")
+        if stage >= 3:
+            lines.append("class N,C,S decision")
+        return mo.mermaid(
+            "\n    ".join(lines),
+            theme="base",
+            theme_variables={
+                "fontSize": "18px",
+                "fontFamily": "-apple-system, BlinkMacSystemFont, Inter, Helvetica Neue, Arial, sans-serif",
+                "lineColor": "#383a42",
+                "edgeLabelBackground": "#ffffff",
+            },
+        )
+
+    return (decision_flow,)
+
+@app.cell
+def _(decision_flow, mo):
+    mo.vstack([mo.md(r"""
+    ## When to use a decision model
+    """), decision_flow(1)], gap=1)
+    return
+
+@app.cell
+def _(decision_flow, mo):
+    mo.vstack([mo.md(r"""
+    ## What kind of answer?
+    """), decision_flow(2)], gap=1)
+    return
+
+@app.cell
+def _(mo):
+    # Full-slide image, synced from Google Slides (page 4). Re-renders when the file is updated.
+    _slide = mo.watch.file("public/figures/typesafe-primitives.png")
     mo.vstack(
         [
             mo.md(r"""
-    ## Model architecture
-
-    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train. LLMs need a **decoder** to generate. Both are transformers.
+    ## Jev: the TypeSafe API
     """),
             mo.vstack(
                 [
                     mo.image(
                         _slide.read_bytes(),
-                        style={"max-height": "36cqw", "width": "auto", "max-width": "100%"},
+                        style={"max-height": "32cqw", "width": "auto", "max-width": "100%"},
                     ),
                     mo.md(r"""
-    <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
+    <small>Source: [docs.typesafe.ai](https://docs.typesafe.ai/introduction)</small>
     """),
                 ],
                 align="center",
                 gap=0.25,
             ),
+            mo.md(r"""
+    Note: Jev itself is **closed source**. We see the API, but we don't really know what's **behind** it.
+    """),
         ],
-        gap=0.5,
+        gap=0.75,
     )
     return
 
+
+@app.cell
+def _(decision_flow, mo):
+    mo.vstack([mo.md(r"""
+    ## What kind of answer?
+    """), decision_flow(3)], gap=1)
+    return
 
 @app.cell
 def _(mo):
     mo.vstack(
         [
             mo.md(r"""
-    ## How decision models changed the equation
+    ## Jev data structures
 
     The question moved **from the output head into the input**: one state, many questions, one call.
     """),
             mo.hstack(
                 [
                     mo.md(r"""
-    | type | asks | returns |
-    |---|---|---|
-    | **noul** | is this true? | P(yes) |
-    | **choice** | pick one of N | P over options |
-    | **score** | how much? | P over ordered levels |
+    ```python
+
+    @dataclass
+    class Noul:      # is this true?
+        instructions: str
+        # -> noul: P(yes)
+
+
+    @dataclass
+    class Choice:    # pick one of N
+        instructions: str
+        criteria: dict[str, str]
+        # -> choice + probabilities
+
+
+    @dataclass
+    class Score:     # how much? (ordered classes)
+        instructions: str
+        criteria: list[str]
+        # -> score + probabilities
+    ```
     """),
                     mo.md(r"""
     ```python
@@ -359,13 +450,43 @@ def _(mo):
     ```
     """),
                 ],
-                widths=[1, 1.6],
+                widths=[1, 1.5],
                 align="center",
-                gap=2,
+                gap=1.5,
             ),
             mo.md(r"""
     <small>API shape: [TypeSafe docs, quickstart](https://docs.typesafe.ai/introduction/quickstart) (`POST /v1/systemone`)</small>
     """),
+        ],
+        gap=0.5,
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    # Full-slide image, synced from Google Slides (page 3). Re-renders when the file is updated.
+    _slide = mo.watch.file("public/figures/encoder-vs-decoder.png")
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## Model architecture
+
+    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train. LLMs need a **decoder** to generate. Both are transformers.
+    """),
+            mo.vstack(
+                [
+                    mo.image(
+                        _slide.read_bytes(),
+                        style={"max-height": "36cqw", "width": "auto", "max-width": "100%"},
+                    ),
+                    mo.md(r"""
+    <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
+    """),
+                ],
+                align="center",
+                gap=0.25,
+            ),
         ],
         gap=0.5,
     )

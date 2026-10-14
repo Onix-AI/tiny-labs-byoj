@@ -158,3 +158,21 @@
   color: #9ca3af;
   pointer-events: none;
 }
+
+/* Mermaid diagrams: fill the slide instead of rendering at their natural size. */
+.mo-slides-theme marimo-mermaid,
+.mo-slides-theme marimo-mermaid > * {
+  width: 100%;
+}
+
+.mo-slides-theme marimo-mermaid {
+  display: block;
+}
+
+.mo-slides-theme marimo-mermaid svg {
+  display: block;
+  margin: 0 auto;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 44cqw !important;
+}
