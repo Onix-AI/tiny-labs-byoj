@@ -90,7 +90,7 @@ def _(mo):
     ```python
 
     def decide(observations: dict) -> bool:
-        '''Make a decision given the observations.'''
+        '''Is the value above the threshold?'''
 
         return observations["value"] > MAXIMUM_ALLOWED_VALUE
 
