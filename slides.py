@@ -23,11 +23,12 @@ app = marimo.App(
 
 @app.cell
 def _():
+    import base64
     import math
 
     import marimo as mo
 
-    return math, mo
+    return base64, math, mo
 
 
 @app.cell
@@ -478,7 +479,7 @@ def _(mo):
                 [
                     mo.image(
                         _slide.read_bytes(),
-                        style={"max-height": "36cqw", "width": "auto", "max-width": "100%"},
+                        style={"max-height": "44cqw", "width": "auto", "max-width": "100%"},
                     ),
                     mo.md(r"""
     <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
@@ -494,66 +495,109 @@ def _(mo):
 
 
 @app.cell
+def _(math, mo, temperature):
+    # Toy answer logits for "Which topic is this question about?" (the real model comes later).
+    _logits = {"sleep": 4.0, "nutrition": 1.5, "fitness": 1.0, "off-topic": 0.2}
+    _z = {k: v / temperature.value for k, v in _logits.items()}
+    _norm = sum(math.exp(v) for v in _z.values())
+    _probs = {k: math.exp(v) / _norm for k, v in _z.items()}
+    _top = max(_probs, key=_probs.get)
+
+    _cols = "".join(
+        f'''<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%">
+          <div style="font-weight:700;margin-bottom:0.3em">{p:.0%}</div>
+          <div style="width:100%;height:{p * 85:.1f}%;border-radius:6px 6px 0 0;background:{"#a626a4" if k == _top else "#d8b4d8"}"></div>
+        </div>'''
+        for k, p in _probs.items()
+    )
+    _labels = "".join(f'<div style="flex:1;text-align:center">{k}</div>' for k in _probs)
+    _chart = mo.Html(
+        f'''<div style="font-size:1.6cqw;width:100%">
+          <div style="display:flex;align-items:flex-end;gap:1.5cqw;height:20cqw;border-bottom:2px solid #383a42;padding:0 0.5cqw">{_cols}</div>
+          <div style="display:flex;gap:1.5cqw;padding:0.4em 0.5cqw 0;color:#383a42">{_labels}</div>
+        </div>'''
+    )
+
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## Calibration: can you trust the 90%?
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
+    A model is **calibrated** if, when it says **90%**, it's right **90%** of the time.
+
+    - It says **90%** on 10 reviews, but only **8** are right: **overconfident**
+    - Calibrated, it says **80%** on those same reviews: same accuracy, **honest probability**
+
+    Why it matters: decisions run on thresholds. *"Only call the expensive bot if P(relevant) > 0.7"* only works if 0.7 means 0.7.
+
+    Raw LLM logprobs are usually **overconfident**.
+    """),
+                    mo.vstack(
+                        [
+                            mo.md("*Which topic is this question about?*"),
+                            _chart,
+                            temperature,
+                        ],
+                        gap=1,
+                    ),
+                ],
+                widths=[1.1, 1],
+                align="center",
+                gap=2.5,
+            ),
+            mo.md(r"""
+    <small>Example adapted from Sebastian Raschka, [From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev)</small>
+    """),
+        ],
+        gap=0.75,
+    )
+    return
+
+@app.cell
 def _(mo):
     temperature = mo.ui.slider(0.5, 5.0, step=0.1, value=1.0, label="temperature")
     return (temperature,)
 
 
 @app.cell
-def _(math, mo, temperature):
-    # Toy logits standing in for an LLM's answer-token logits (real model comes later).
-    logits = {"angry": 4.0, "neutral": 1.5, "happy": 0.5}
-    z = {k: v / temperature.value for k, v in logits.items()}
-    norm = sum(math.exp(v) for v in z.values())
-    probs = {k: math.exp(v) / norm for k, v in z.items()}
-    bars = "\n".join(
-        f"| {k} | {'█' * round(p * 40)} {p:.0%} |" for k, p in probs.items()
-    )
-    mo.vstack([
-        mo.md("## One temperature fixes the overconfidence"),
-        temperature,
-        mo.md(f"| option | P(option) |\n|---|---|\n{bars}"),
-    ])
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
+def _(base64, mo):
+    # Leaderboard screenshot (cropped to the chart); clicking it opens the live page.
+    _img = base64.b64encode(mo.watch.file("public/figures/jev-decision-index.png").read_bytes()).decode()
+    mo.vstack(
+        [
+            mo.md(r"""
     ## Everyone can build one: the Jev Decision Index
 
-    [Community leaderboard](https://huggingface.co/spaces/multimodalart/jev-decision-index) of open Jev reproductions (snapshot 2026-10-12):
-
-    - **148** models scored on 37 public benchmarks + private tests
-    - **7** open models already beat Jev
-    - **AnyJev L0 · Gemma-4-31B** (logit readout, *no training*) ties Jev: 60.2 vs 60.1, but calibration error **0.24** vs **0.07**
-
-    *Structured output + logprobs gets you the accuracy. Calibration makes it a Jev.*
-
-    📚 Every reproduction, trick and explainer in one place: [the Jev reproductions tracker](https://multimodalart-jev-decision-index.static.hf.space/news.html) (~65 entries)
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.Html(
-        '<iframe src="https://multimodalart-jev-decision-index.static.hf.space/index.html" '
-        'style="width:100%;height:75vh;border:0;border-radius:8px"></iframe>'
+    **10+** open models already score above Jev
+    """),
+            mo.Html(
+                '<a href="https://huggingface.co/spaces/multimodalart/jev-decision-index" target="_blank">'
+                f'<img src="data:image/png;base64,{_img}" '
+                'style="display:block;margin:0 auto;max-height:36cqw;max-width:100%;border-radius:8px"></a>'
+            ),
+            mo.md(r"""
+    [huggingface.co/spaces/multimodalart/jev-decision-index](https://huggingface.co/spaces/multimodalart/jev-decision-index)
+    """).center(),
+        ],
+        gap=0.5,
     )
     return
-
 
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## Where Jev still might fail
+    ## Where decision models might fail
 
-    - **OOD.** In-distribution 75% → **56%** when the dataset is held out.
-    - Multi-step reasoning
-    - Closed weights: no audit
+    They're still **smaller models**, with a weaker **world model**:
 
-    Small, open, cascaded.
+    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
+    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
+    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+
+    Let's find out. **Demo time.**
     """)
     return
 
