@@ -47,24 +47,63 @@
 }
 
 .mo-slides-theme h2 {
-  font-size: 3.6cqw !important;
+  font-size: 3.4cqw !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.01em;
   margin-top: 0 !important;
-  margin-bottom: 0.5em !important;
+  margin-bottom: 0.9em !important;
+}
+
+/* Readability: room around the slide, airy lines, spaced-out bullets. */
+.mo-slides-theme [data-testid="slide-scroll-container"] {
+  padding: 3cqw 5cqw !important;
+  box-sizing: border-box;
 }
 
 .mo-slides-theme :is(p, li, td, th, blockquote, .paragraph) {
-  font-size: 2cqw !important;
-  line-height: 1.5 !important;
+  font-size: 1.8cqw !important;
+  line-height: 1.6 !important;
+}
+
+.mo-slides-theme .markdown :is(p, .paragraph) {
+  margin: 0 0 0.9em 0 !important;
+}
+
+.mo-slides-theme .markdown :is(ul, ol) {
+  margin: 0.4em 0 1em 0 !important;
+  padding-left: 1.4em !important;
+}
+
+.mo-slides-theme .markdown li {
+  margin-bottom: 0.7em !important;
+}
+
+.mo-slides-theme .markdown li::marker {
+  color: #a0a1a7;
+}
+
+.mo-slides-theme .markdown strong {
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Citations and sources: quiet. */
+.mo-slides-theme .markdown small,
+.mo-slides-theme .markdown small * {
+  font-size: 1.05cqw !important;
+  color: #6b7280 !important;
+  line-height: 1.4 !important;
 }
 
 .mo-slides-theme pre,
 .mo-slides-theme pre code {
-  font-size: 1.45cqw !important;
-  line-height: 1.4 !important;
+  font-size: 1.4cqw !important;
+  line-height: 1.5 !important;
 }
 
 .mo-slides-theme pre {
-  margin: 0.6em 0 !important;
+  margin: 0.6em 0 1em 0 !important;
+  padding: 1em 1.25em !important;
 }
 
 /* Code blocks: One Light (vivid on a projector). */

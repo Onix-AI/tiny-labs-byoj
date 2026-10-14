@@ -258,41 +258,117 @@ def _(mo):
         [
             mo.md(r"""
     ## The problem: LLMs are slow and expensive deciders
-
-    - **Latency**: LLMs **generate** token by token (and may reason first), a decision only needs **one forward pass**
-    - **Model**: LLMs have to **generate** text, a decision only needs to **understand** it
     """),
-            mo.vstack(
+            mo.hstack(
                 [
-                    mo.image(_fig.read_bytes(), style={"max-height": "30cqw", "width": "auto", "max-width": "100%"}),
                     mo.md(r"""
+    - **Latency**: LLMs **generate** every token in the response, a decision only generates **one token**
+
+    - **Model**: LLMs have to learn to **generate** text, a decision model only needs to **understand** it
+    """),
+                    mo.vstack(
+                        [
+                            mo.image(_fig.read_bytes(), style={"max-height": "36cqw", "width": "auto", "max-width": "100%"}),
+                            mo.md(r"""
     <small>Source: [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), TypeSafe, Oct 12, 2026</small>
     """),
+                        ],
+                        align="center",
+                        gap=0.25,
+                    ),
                 ],
+                widths=[1, 1.5],
                 align="center",
-                gap=0.25,
+                gap=3,
             ),
         ],
-        gap=1.5,
+        gap=1,
     )
     return
 
 
 @app.cell
 def _(mo):
-    mo.md(r"""
+    # Full-slide image, synced from Google Slides (page 3). Re-renders when the file is updated.
+    _slide = mo.watch.file("public/figures/encoder-vs-decoder.png")
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## Model architecture
+
+    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train. LLMs need a **decoder** to generate. Both are transformers.
+    """),
+            mo.vstack(
+                [
+                    mo.image(
+                        _slide.read_bytes(),
+                        style={"max-height": "36cqw", "width": "auto", "max-width": "100%"},
+                    ),
+                    mo.md(r"""
+    <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
+    """),
+                ],
+                align="center",
+                gap=0.25,
+            ),
+        ],
+        gap=0.5,
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.vstack(
+        [
+            mo.md(r"""
     ## How decision models changed the equation
 
-    The question moved **from the output head into the input**.
-
-    `(state, question, options) → probability per option`, in one pass.
-
+    The question moved **from the output head into the input**: one state, many questions, one call.
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
     | type | asks | returns |
     |---|---|---|
-    | **choice** | pick one of N | P over options |
     | **noul** | is this true? | P(yes) |
+    | **choice** | pick one of N | P over options |
     | **score** | how much? | P over ordered levels |
-    """)
+    """),
+                    mo.md(r"""
+    ```python
+
+    response = client.system_one(
+        state=user_message,
+        questions={
+            "is_relevant": Noul(instructions="Is this about health and wellness?"),
+            "topic": Choice(
+                instructions="Which topic is it about?",
+                criteria={"sleep": "...", "nutrition": "...", "fitness": "..."},
+            ),
+            "urgency": Score(
+                instructions="How urgent is it?",
+                criteria=["not urgent", "somewhat urgent", "very urgent"],
+            ),
+        },
+    )
+
+    response.nouls["is_relevant"].noul    # 0.97
+    response.choices["topic"].choice      # "sleep"
+    response.scores["urgency"].score      # 0.33
+    ```
+    """),
+                ],
+                widths=[1, 1.6],
+                align="center",
+                gap=2,
+            ),
+            mo.md(r"""
+    <small>API shape: [TypeSafe docs, quickstart](https://docs.typesafe.ai/introduction/quickstart) (`POST /v1/systemone`)</small>
+    """),
+        ],
+        gap=0.5,
+    )
     return
 
 

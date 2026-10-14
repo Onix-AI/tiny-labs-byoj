@@ -1,37 +1,62 @@
 <script>
-  // Slide numbers (1, 2, 3, ... in Space order, sub-slides included) in the
-  // bottom-left corner, so slides can be referred to by number.
+  // 1. Slide numbers (1, 2, 3, ... in Space order, sub-slides included) in the
+  //    bottom-left corner, so slides can be referred to by number.
+  // 2. Shrink-to-fit: a slide whose content is taller than the frame is scaled
+  //    down just enough to fit, instead of getting a scroll bar.
   (() => {
     let queued = false;
+
+    function numberSlides(reveal) {
+      const slides = [...reveal.querySelectorAll(".slides section")].filter(
+        (s) => !s.querySelector("section"),
+      );
+      const current = slides.findIndex((s) => s.classList.contains("present"));
+      let badge = reveal.querySelector(":scope > .slide-num");
+      if (!badge) {
+        badge = document.createElement("div");
+        badge.className = "slide-num";
+        reveal.appendChild(badge);
+      }
+      const text = current >= 0 ? String(current + 1) : "";
+      if (badge.textContent !== text) badge.textContent = text;
+    }
+
+    function fitSlides(reveal) {
+      reveal.querySelectorAll('[data-testid="slide-scroll-container"]').forEach((box) => {
+        const inner = box.firstElementChild;
+        if (!inner || box.clientHeight === 0) return;
+        inner.style.zoom = "";
+        const style = getComputedStyle(box);
+        const available =
+          box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        const ratio = available / inner.scrollHeight;
+        if (ratio < 0.999) inner.style.zoom = String(Math.max(0.5, ratio * 0.98));
+      });
+    }
 
     function update() {
       queued = false;
       document.querySelectorAll(".reveal").forEach((reveal) => {
-        const slides = [...reveal.querySelectorAll(".slides section")].filter(
-          (s) => !s.querySelector("section"),
-        );
-        const current = slides.findIndex((s) => s.classList.contains("present"));
-        let badge = reveal.querySelector(":scope > .slide-num");
-        if (!badge) {
-          badge = document.createElement("div");
-          badge.className = "slide-num";
-          reveal.appendChild(badge);
-        }
-        const text = current >= 0 ? String(current + 1) : "";
-        if (badge.textContent !== text) badge.textContent = text;
+        numberSlides(reveal);
+        fitSlides(reveal);
       });
     }
 
-    new MutationObserver(() => {
+    function schedule() {
       if (!queued) {
         queued = true;
         requestAnimationFrame(update);
       }
-    }).observe(document.documentElement, {
+    }
+
+    new MutationObserver(schedule).observe(document.documentElement, {
       subtree: true,
       childList: true,
       attributes: true,
       attributeFilter: ["class"],
     });
+    window.addEventListener("resize", schedule);
+    // Images change the height once they load.
+    document.addEventListener("load", schedule, true);
   })();
 </script>
