@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-15",
+  "models": {
+    "local": "Qwen/Qwen3-1.7B",
+    "api": "openai/gpt-4o-mini",
+    "jev": "~typesafe/jev-latest"
+  },
+  "results": [
+    {
+      "key": "rain",
+      "state": "It's October 2026.",
+      "question": "Will it rain in Montreal 3 weeks from today?",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "answers": {
+        "Qwen3-1.7B (offline)": {
+          "probabilities": {
+            "no": 0.18242552380635635,
+            "yes": 0.8175744761936437
+          },
+          "error": null,
+          "ms": 170
+        },
+        "openai/gpt-4o-mini": {
+          "probabilities": {
+            "no": 0.9997694933169885,
+            "yes": 0.00023050668301158143
+          },
+          "error": null,
+          "ms": 903
+        },
+        "Jev": {
+          "probabilities": {
+            "no": 0.46,
+            "yes": 0.54
+          },
+          "error": null,
+          "ms": 247
+        }
+      }
+    },
+    {
+      "key": "house",
+      "state": "The US midterms are in November 2026.",
+      "question": "Who wins the House?",
+      "options": [
+        "Democrats",
+        "Republicans"
+      ],
+      "answers": {
+        "Qwen3-1.7B (offline)": {
+          "probabilities": {
+            "Democrats": 0.7879311956428946,
+            "Republicans": 0.21206880435710534
+          },
+          "error": null,
+          "ms": 119
+        },
+        "openai/gpt-4o-mini": {
+          "probabilities": {
+            "Democrats": 0.008577487377843779,
+            "Republicans": 0.9914225126221563
+          },
+          "error": null,
+          "ms": 1454
+        },
+        "Jev": {
+          "probabilities": {
+            "Democrats": 0.27,
+            "Republicans": 0.73
+          },
+          "error": null,
+          "ms": 188
+        }
+      }
+    },
+    {
+      "key": "coin",
+      "state": "I flip a fair coin.",
+      "question": "How does it land?",
+      "options": [
+        "heads",
+        "tails"
+      ],
+      "answers": {
+        "Qwen3-1.7B (offline)": {
+          "probabilities": {
+            "heads": 0.9998726889583778,
+            "tails": 0.00012731104162213552
+          },
+          "error": null,
+          "ms": 114
+        },
+        "openai/gpt-4o-mini": {
+          "probabilities": {
+            "heads": 0.9947798745796893,
+            "tails": 0.005220125420310695
+          },
+          "error": null,
+          "ms": 1303
+        },
+        "Jev": {
+          "probabilities": {
+            "heads": 0.61,
+            "tails": 0.39
+          },
+          "error": null,
+          "ms": 179
+        }
+      }
+    }
+  ]
+}

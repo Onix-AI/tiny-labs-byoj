@@ -662,19 +662,38 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
-    mo.md(r"""
-    ## Where decision models might fail
+def _(json, mo):
+    # Real answers, saved from the demo's three backends. Re-renders when the file is updated.
+    _saved = json.loads(mo.watch.file("public/results/failures.json").read_text())
+    _models = list(_saved["results"][0]["answers"])
 
-    They're still **smaller models**, with a weaker **world model**:
+    def _top(answer):
+        probs = answer["probabilities"]
+        if not probs:
+            return "error"
+        best = max(probs, key=probs.get)
+        return f"{best} **{probs[best]:.0%}**"
 
-    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
-    - **Stochastic events**: *"Will it rain in Montreal 3 weeks from today?"*
-    - **Unknowable futures**: *"Who wins the House in the November 2026 midterms?"* They still answer, with confidence
-    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+    _rows = "\n".join(
+        f"| *{r['state']} {r['question']}* | " + " | ".join(_top(r["answers"][m]) for m in _models) + " |"
+        for r in _saved["results"]
+    )
+    mo.md(f"""
+## Where decision models might fail
 
-    So how good are the open ones?
-    """)
+They're still **smaller models**, with a weaker **world model**:
+
+- **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
+- **Stochastic events, unknowable futures, calibration**: they still answer, with confidence
+
+| We asked | {" | ".join(_models)} |
+|---|{"---|" * len(_models)}
+{_rows}
+
+<small>Real answers, {_saved["date"]}. Same prompts as the demo.</small>
+
+So how good are the open ones?
+""")
     return
 
 
