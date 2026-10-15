@@ -53,16 +53,16 @@ def _(mo):
 
 @app.cell
 def _():
-    LETTERS = "ABCDEFGHIJ"
+    DIGITS = "0123456789"
 
 
     def build_messages(state, question, options):
-        """The same prompt for every model: the options become single letters."""
-        listing = "\n".join(f"{l}) {o}" for l, o in zip(LETTERS, options))
-        prompt = f'Message:\n"""\n{state}\n"""\n\nQuestion about the message: {question}\n{listing}\n\nAnswer with a single letter.'
+        """The same prompt for every model: the options become single digits."""
+        listing = "\n".join(f"{d}) {o}" for d, o in zip(DIGITS, options))
+        prompt = f'Message:\n"""\n{state}\n"""\n\nQuestion about the message: {question}\n{listing}\n\nAnswer with a single digit.'
         return [{"role": "user", "content": prompt}]
 
-    return LETTERS, build_messages
+    return DIGITS, build_messages
 
 
 @app.cell
@@ -76,7 +76,7 @@ def _(mo):
 
 
 @app.cell
-def _(LETTERS, OpenAI, build_messages, math, os, time):
+def _(DIGITS, OpenAI, build_messages, math, os, time):
     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ.get("OPENROUTER_API_KEY", "missing"))
 
 
@@ -96,13 +96,10 @@ def _(LETTERS, OpenAI, build_messages, math, os, time):
         if logprobs is None or not logprobs.content:
             raise ValueError(f"{model} returned no logprobs")
 
-        # "A" and " A" are different tokens for the same answer: add them up
-        probs = {l: 0.0 for l in LETTERS[: len(options)]}
-        for t in logprobs.content[0].top_logprobs:
-            if t.token.strip() in probs:
-                probs[t.token.strip()] += math.exp(t.logprob)
-        total = sum(probs.values()) or 1.0
-        return {o: p / total for o, p in zip(options, probs.values())}, ms
+        top = {t.token: t.logprob for t in logprobs.content[0].top_logprobs}
+        probs = [math.exp(top.get(d, -math.inf)) for d in DIGITS[: len(options)]]
+        total = sum(probs) or 1.0
+        return {o: p / total for o, p in zip(options, probs)}, ms
 
     return (jev_api,)
 
@@ -146,7 +143,7 @@ def _(mo):
     mo.md(r"""
     ## 3. Fully offline: a tiny local model
 
-    Same prompt, same idea: one forward pass, then read the logits of the option letters.
+    Same prompt, same idea: one forward pass, then read the logits of the option digits.
     """)
     return
 
@@ -163,7 +160,7 @@ def _(AutoModelForCausalLM, AutoTokenizer, torch):
 
 
 @app.cell
-def _(LETTERS, build_messages, device, model, time, tokenizer, torch):
+def _(DIGITS, build_messages, device, model, time, tokenizer, torch):
     @torch.no_grad()
     def jev_local(state, question, options):
         start = time.perf_counter()
@@ -176,8 +173,8 @@ def _(LETTERS, build_messages, device, model, time, tokenizer, torch):
         inputs = tokenizer(text, return_tensors="pt").to(device)
         logits = model(**inputs).logits[0, -1]  # next-token logits, no generation
 
-        letter_ids = [tokenizer.encode(l, add_special_tokens=False)[0] for l in LETTERS[: len(options)]]
-        probs = logits[letter_ids].float().softmax(-1).tolist()
+        digit_ids = [tokenizer.encode(d, add_special_tokens=False)[0] for d in DIGITS[: len(options)]]
+        probs = logits[digit_ids].float().softmax(-1).tolist()
         ms = (time.perf_counter() - start) * 1000
         return dict(zip(options, probs)), ms
 
