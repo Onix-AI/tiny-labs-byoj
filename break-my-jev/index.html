@@ -148,6 +148,8 @@ async function refresh() {
     const r = await fetch("api/feed");
     const data = await r.json();
     tiers = data.tiers;
+    $("go").disabled = data.paused;
+    $("go").textContent = data.paused ? "Submissions closed" : "Try to break it";
     renderTiers();
     $("total").textContent = `· ${data.total} total`;
     const first = seen.size === 0;
