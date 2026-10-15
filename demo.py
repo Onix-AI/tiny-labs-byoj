@@ -39,7 +39,8 @@ def _():
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     load_dotenv(mo.notebook_dir() / ".env")  # OPENROUTER_API_KEY, gitignored
-    return AutoModelForCausalLM, AutoTokenizer, OpenAI, dataclass, httpx, math, mo, os, random, time, torch
+    autorun = os.environ.get("DEMO_AUTORUN") == "1"  # run everything without pressing buttons (for exports)
+    return AutoModelForCausalLM, AutoTokenizer, OpenAI, autorun, dataclass, httpx, math, mo, os, random, time, torch
 
 
 @app.cell
@@ -233,8 +234,8 @@ def _(mo):
 
 
 @app.cell
-def _(Choice, api_model, bars, mo, options, question, run, run_all, state):
-    mo.stop(not run.value, mo.md("*Press Run.*"))
+def _(Choice, api_model, autorun, bars, mo, options, question, run, run_all, state):
+    mo.stop(not (run.value or autorun), mo.md("*Press Run.*"))
 
     _choice = Choice(question.value, [o.strip() for o in options.value.split(",")])
     _panels = []
@@ -281,8 +282,8 @@ def _(mo):
 
 
 @app.cell
-def _(TASKS, api_model, mo, run_all, run_tasks):
-    mo.stop(not run_tasks.value)
+def _(TASKS, api_model, autorun, mo, run_all, run_tasks):
+    mo.stop(not (run_tasks.value or autorun))
 
     def _fmt(result, ms):
         if not isinstance(result, dict):
@@ -302,11 +303,23 @@ def _(TASKS, api_model, mo, run_all, run_tasks):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 6. Can a decision model be random? Estimating π
+    ## 6. Can a decision model be random? Approximating π
 
-    Ask for a random digit **once**, then draw points from that distribution: `x = 0.d₁d₂`, `y = 0.d₃d₄`.
+    Did you know you could approximate pi by just drawing points at random on a grid? This is how it works:
 
-    π ≈ 4 × (fraction of points inside the circle). A fair model gives 10% per digit, and π ≈ 3.14.
+    Draw an (x,y) point at random inside a square, and check if it falls within a circle inscribed in that square. Count the number of circle hits and divide by the number of total hits. This should approximate the area of the circle to the square. From that, we can approximate pi. Check out the figure below for more intuition.
+
+    ![approximate_pi](https://i.stack.imgur.com/g0Ctz.png)
+
+    Since
+
+    ![approx_pi1](https://user-images.githubusercontent.com/18450628/111053532-8d5f5b00-8432-11eb-9be4-2de7ec8cc3e2.jpg)
+
+    we can approximate pi:
+
+    ![approx_pi2](https://user-images.githubusercontent.com/18450628/111053571-d1526000-8432-11eb-9e23-27867c99a54b.png)
+
+    **The twist:** instead of `random.random()`, we ask each model for a random digit **once**, then draw points from its distribution (`x = 0.d₁d₂`, `y = 0.d₃d₄`). A fair model gives 10% per digit, and π ≈ 3.14. Play with N, the number of points to draw, to see how it affects the approximation.
     """)
     return
 
@@ -321,8 +334,8 @@ def _(mo):
 
 
 @app.cell
-def _(Choice, api_model, mo, pi_state, run_all, run_pi):
-    mo.stop(not run_pi.value, mo.md("*Press Ask the models.*"))
+def _(Choice, api_model, autorun, mo, pi_state, run_all, run_pi):
+    mo.stop(not (run_pi.value or autorun), mo.md("*Press Ask the models.*"))
 
     digit = Choice("Pick a random digit.", [str(i) for i in range(10)])
     digit_probs = {}
