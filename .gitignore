@@ -8,3 +8,4 @@ pyproject.toml
 uv.lock
 proto_*.py
 precompute_*.py
+.env

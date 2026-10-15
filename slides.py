@@ -24,11 +24,12 @@ app = marimo.App(
 @app.cell
 def _():
     import base64
+    import json
     import math
 
     import marimo as mo
 
-    return base64, math, mo
+    return base64, json, math, mo
 
 
 @app.cell
@@ -482,7 +483,7 @@ def _(mo):
 
     response.nouls["is_relevant"].noul    # 0.97
     response.choices["topic"].choice      # "sleep"
-    response.scores["urgency"].score      # 0.33
+    response.scores["urgency"].score      # 0.26
     ```
     """),
                 ],
@@ -500,45 +501,56 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _(json, mo):
+    # A real Jev call, saved from OpenRouter's Decisions API. Re-renders when the file is updated.
+    _result = json.loads(mo.watch.file("public/results/jev-3am.json").read_text())
+    _response = _result["response"]
+    _relevant, _topic, _urgency = (_response["answers"][k] for k in ("is_relevant", "topic", "urgency"))
+    _level = max(_urgency["probabilities"], key=_urgency["probabilities"].get)
+    _asked = {k: q["instructions"] for k, q in _result["request"]["questions"].items()}
+
+    _code = "\n".join(
+        [
+            "```python",
+            "",
+            f'# Noul: "{_asked["is_relevant"]}"',
+            '"is_relevant": {',
+            f'    "noul": {_relevant["noul"]},',
+            "},",
+            f'# Choice: "{_asked["topic"]}"',
+            '"topic": {',
+            f'    "choice": "{_topic["choice"]}",',
+            f'    "probabilities": {json.dumps(_topic["probabilities"])},',
+            "},",
+            f'# Score: "{_asked["urgency"]}"',
+            '"urgency": {',
+            f'    "score": {_urgency["score"]},',
+            f'    "probabilities": {json.dumps(_urgency["probabilities"])},',
+            "},",
+            "```",
+        ]
+    )
+    _reading = "\n".join(
+        [
+            f"- **{_relevant['noul']:.0%}** sure it's about health and wellness: call the bot",
+            f"- It's about **{_topic['choice']}** ({_topic['probabilities'][_topic['choice']]:.0%})",
+            f"- Mostly **{_urgency['legend'][_level]}** ({_urgency['probabilities'][_level]:.0%})",
+        ]
+    )
+
     mo.vstack(
         [
-            mo.md(r"""
-    ## What comes back
+            mo.md(f"""
+## What comes back
 
-    *"I keep waking up at 3am and can't fall back asleep. Any tips?"*
-    """),
-            mo.hstack(
-                [
-                    mo.md(r"""
-    ```python
-
-    "is_relevant": {    # Noul
-        "noul": 0.97,
-    },
-    "topic": {          # Choice
-        "choice": "sleep",
-        "probabilities": {"sleep": 0.94, "nutrition": 0.04, "fitness": 0.02},
-    },
-    "urgency": {        # Score
-        "score": 0.33,
-        "probabilities": {"0": 0.70, "1": 0.27, "2": 0.03},
-    },
-    ```
-    """),
-                    mo.md(r"""
-    - **97%** sure it's about health and wellness: call the bot
-    - It's about **sleep**, and the other options show how close the call was
-    - **Mostly not urgent** (70%)
-    """),
-                ],
-                widths=[1.5, 1],
-                align="center",
-                gap=2,
+*"{_result["request"]["state"]}"*
+"""),
+            mo.hstack([mo.md(_code), mo.md(_reading)], widths=[1.5, 1], align="center", gap=2),
+            mo.md(
+                f"<small>Real response from `{_response['model']}` via OpenRouter's Decisions API "
+                f"({_result['latency_ms']} ms, ${_response['usage']['cost']:.6f}, {_result['date']}). "
+                f"Raw: <code>public/results/jev-3am.json</code></small>"
             ),
-            mo.md(r"""
-    <small>Illustrative output for our health and wellness example, in Jev's response format ([TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart))</small>
-    """),
         ],
         gap=0.5,
     )
@@ -657,7 +669,8 @@ def _(mo):
     They're still **smaller models**, with a weaker **world model**:
 
     - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
-    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
+    - **Stochastic events**: *"Will it rain in Montreal 3 weeks from today?"*
+    - **Unknowable futures**: *"Who wins the House in the November 2026 midterms?"* They still answer, with confidence
     - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
 
     So how good are the open ones?
@@ -704,6 +717,24 @@ def _(mo):
     Then we throw some questions at them and see how they do.
 
     **Demo time.**
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## What's next: beyond decisions
+
+    Jev 1.14 (Oct 14, 2026) points at where this is going:
+
+    - **New answer types**: `Box` *"returns a single bounding box"*, their *"first type that's not purely meant for smart-if statements"*
+    - **Beyond text**: images as state, but *"all models (Jev included) perform worse on multimodality over pure text"*
+    - **Longer context**: *"we strongly recommend limiting context length, you no longer have to"*
+
+    All three ship behind opt-in `TypeSafe-Danger-Zone-*` headers.
+
+    <small>Source: [Jev: For the builders AND dreamers](https://typesafe.ai/blog/jev-1-14), TypeSafe, Oct 14, 2026</small>
     """)
     return
 
