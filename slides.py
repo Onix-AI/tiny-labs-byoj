@@ -708,5 +708,23 @@ def _(mo):
     return
 
 
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## What's next: beyond decisions
+
+    Jev 1.14 (Oct 14, 2026) points at where this is going:
+
+    - **New answer types**: `Box` *"returns a single bounding box"*, their *"first type that's not purely meant for smart-if statements"*
+    - **Beyond text**: images as state, but *"all models (Jev included) perform worse on multimodality over pure text"*
+    - **Longer context**: *"we strongly recommend limiting context length, you no longer have to"*
+
+    All three ship behind opt-in `TypeSafe-Danger-Zone-*` headers.
+
+    <small>Source: [Jev: For the builders AND dreamers](https://typesafe.ai/blog/jev-1-14), TypeSafe, Oct 14, 2026</small>
+    """)
+    return
+
+
 if __name__ == "__main__":
     app.run()
