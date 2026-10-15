@@ -50,6 +50,8 @@ def _(mo):
 
     A decision: a **state**, a **question**, a fixed set of **options**.
     We never let the model write an answer. We read the probability of **one token**.
+
+    **Setup**: three ways to get a decision. Then: **1.** try it, **2.** heads or tails, **3.** approximating π.
     """)
     return
 
@@ -77,7 +79,7 @@ def _(dataclass, math):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 1. Any LLM → Jev
+    ### Any LLM → Jev
 
     Ask for **one token**, with its **logprobs**.
     """)
@@ -108,7 +110,7 @@ def _(OpenAI, math, os, prompt, softmax):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 2. The real thing: Jev
+    ### The real thing: Jev
 
     TypeSafe's Jev, through OpenRouter's Decisions API. No prompt, just a typed question.
     """)
@@ -143,7 +145,7 @@ def _(httpx, os):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 3. Fully offline: a tiny local model
+    ### Fully offline: a tiny local model
 
     One forward pass, then read the logits of the option digits. No generation, no network.
     """)
@@ -213,7 +215,7 @@ def _(jev_api, jev_local, jev_typesafe, mo, time):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 4. Try it
+    ## 1. Try it
     """)
     return
 
@@ -249,61 +251,43 @@ def _(Choice, api_model, autorun, bars, mo, options, question, run, run_all, sta
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 5. Head to head
+    ## 2. Heads or tails?
 
-    Some questions have a right answer. Some **can't** have one, and we still get a distribution.
+    A fair coin should be **50 / 50**. We ask the same question twice, only swapping the order of the options.
     """)
     return
 
 
 @app.cell
-def _(Choice):
-    health = Choice("Is this about health and wellness?", ["no", "yes"])
-
-    TASKS = [
-        ("Can you help me reset my password?", health),
-        ("What's the best way to fix a flat bike tire?", health),
-        ("I keep waking up at 3am and can't fall back asleep. Any tips?", health),
-        ("How much protein should I eat after a workout?", health),
-        ("I keep waking up at 3am and can't fall back asleep. Any tips?", Choice("Which topic?", ["sleep", "nutrition", "fitness"])),
-        ("I flip a fair coin.", Choice("How does it land?", ["heads", "tails"])),
-        ("I flip a fair coin.", Choice("How does it land?", ["tails", "heads"])),
-        ("It's October 2026.", Choice("Will it rain in Montreal 3 weeks from today?", ["no", "yes"])),
-        ("The US midterms are in November 2026.", Choice("Who wins the House?", ["Democrats", "Republicans"])),
-    ]
-    return (TASKS,)
-
-
-@app.cell
 def _(mo):
-    run_tasks = mo.ui.run_button(label="Run all (live)")
-    run_tasks
-    return (run_tasks,)
+    flip = mo.ui.run_button(label="Flip")
+    flip
+    return (flip,)
 
 
 @app.cell
-def _(TASKS, api_model, autorun, mo, run_all, run_tasks):
-    mo.stop(not (run_tasks.value or autorun))
+def _(Choice, api_model, autorun, bars, flip, mo, run_all):
+    mo.stop(not (flip.value or autorun), mo.md("*Press Flip.*"))
 
-    def _fmt(result, ms):
-        if not isinstance(result, dict):
-            return result
-        return " · ".join(f"{option} {p:.0%}" for option, p in result.items()) + f"  ({ms:.0f} ms)"
-
-    _rows = []
-    for _state, _choice in TASKS:
-        _row = {"state": _state, "question": _choice.instructions}
-        for _name, (_result, _ms) in run_all(_state, _choice, api_model.value).items():
-            _row[_name] = _fmt(_result, _ms)
-        _rows.append(_row)
-    mo.ui.table(_rows, selection=None)
+    _orders = {
+        "heads, tails": Choice("How does it land?", ["heads", "tails"]),
+        "tails, heads": Choice("How does it land?", ["tails", "heads"]),
+    }
+    _columns = {}
+    for _order, _choice in _orders.items():
+        for _name, (_result, _ms) in run_all("I flip a fair coin.", _choice, api_model.value).items():
+            _probs = {o: _result[o] for o in ("heads", "tails")} if isinstance(_result, dict) else None
+            _columns.setdefault(_name, []).append(
+                mo.vstack([mo.md(f"*options: {_order}*"), bars(_probs) if _probs else mo.md(_result)])
+            )
+    mo.hstack([mo.vstack([mo.md(f"**{_name}**"), *_charts]) for _name, _charts in _columns.items()], widths="equal", gap=2)
     return
 
 
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 6. Can a decision model be random? Approximating π
+    ## 3. Can a decision model be random? Approximating π
 
     Did you know you could approximate pi by just drawing points at random on a grid? This is how it works:
 

@@ -507,19 +507,23 @@ def _(json, mo):
     _response = _result["response"]
     _relevant, _topic, _urgency = (_response["answers"][k] for k in ("is_relevant", "topic", "urgency"))
     _level = max(_urgency["probabilities"], key=_urgency["probabilities"].get)
+    _asked = {k: q["instructions"] for k, q in _result["request"]["questions"].items()}
 
     _code = "\n".join(
         [
             "```python",
             "",
-            '"is_relevant": {    # Noul',
+            f'# Noul: "{_asked["is_relevant"]}"',
+            '"is_relevant": {',
             f'    "noul": {_relevant["noul"]},',
             "},",
-            '"topic": {          # Choice',
+            f'# Choice: "{_asked["topic"]}"',
+            '"topic": {',
             f'    "choice": "{_topic["choice"]}",',
             f'    "probabilities": {json.dumps(_topic["probabilities"])},',
             "},",
-            '"urgency": {        # Score',
+            f'# Score: "{_asked["urgency"]}"',
+            '"urgency": {',
             f'    "score": {_urgency["score"]},',
             f'    "probabilities": {json.dumps(_urgency["probabilities"])},',
             "},",
@@ -665,7 +669,8 @@ def _(mo):
     They're still **smaller models**, with a weaker **world model**:
 
     - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
-    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
+    - **Stochastic events**: *"Will it rain in Montreal 3 weeks from today?"*
+    - **Unknowable futures**: *"Who wins the House in the November 2026 midterms?"* They still answer, with confidence
     - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
 
     So how good are the open ones?
