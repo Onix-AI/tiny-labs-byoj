@@ -34,7 +34,7 @@ def _():
     from openai import OpenAI
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    load_dotenv()  # OPENROUTER_API_KEY from a local .env (gitignored)
+    load_dotenv(mo.notebook_dir() / ".env")  # OPENROUTER_API_KEY from a .env next to this notebook (gitignored)
     return AutoModelForCausalLM, AutoTokenizer, OpenAI, math, mo, os, time, torch
 
 
