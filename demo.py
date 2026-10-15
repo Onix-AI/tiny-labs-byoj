@@ -325,7 +325,7 @@ def _(Choice, api_model, mo, pi_state, run_all, run_pi):
     mo.stop(not run_pi.value, mo.md("*Press Ask the models.*"))
 
     digit = Choice("Pick a random digit.", [str(i) for i in range(10)])
-    digit_probs = {"Fair die (Python random)": {str(i): 0.1 for i in range(10)}}
+    digit_probs = {}
     for _name, (_result, _ms) in run_all(pi_state.value, digit, api_model.value).items():
         if isinstance(_result, dict):
             digit_probs[_name] = _result
@@ -334,17 +334,24 @@ def _(Choice, api_model, mo, pi_state, run_all, run_pi):
 
 @app.cell
 def _(mo, random):
-    def estimate_pi(probs, n, seed=0):
-        """Draw n points whose digits come from `probs`; return (pi estimate, points)."""
+    def estimate_pi(draw_digit, n, seed=0):
+        """Draw n points from a digit generator; return (pi estimate, points, digits drawn)."""
         rng = random.Random(seed)
+        digits = []
 
         def coordinate():
-            d1, d2 = rng.choices(list(probs), weights=list(probs.values()), k=2)
-            return (int(d1) * 10 + int(d2) + 0.5) / 100
+            d1, d2 = draw_digit(rng), draw_digit(rng)
+            digits.extend([d1, d2])
+            return (d1 * 10 + d2 + 0.5) / 100
 
         points = [(coordinate(), coordinate()) for _ in range(n)]
         inside = sum((x - 0.5) ** 2 + (y - 0.5) ** 2 < 0.25 for x, y in points)
-        return 4 * inside / n, points
+        return 4 * inside / n, points, digits
+
+
+    def from_model(probs):
+        """A digit generator that samples from a model's distribution."""
+        return lambda rng: int(rng.choices(list(probs), weights=list(probs.values()))[0])
 
 
     def scatter(points, size=180):
@@ -359,15 +366,19 @@ def _(mo, random):
             f'<circle cx="{size / 2}" cy="{size / 2}" r="{size / 2}" fill="none" stroke="#383a42"/>{dots}</svg>'
         )
 
-    return estimate_pi, scatter
+    return estimate_pi, from_model, scatter
 
 
 @app.cell
-def _(bars, digit_probs, estimate_pi, mo, n_points, scatter):
+def _(bars, digit_probs, estimate_pi, from_model, mo, n_points, scatter):
+    _generators = {"random.randint(0, 9)": lambda rng: rng.randint(0, 9)}
+    _generators.update({name: from_model(probs) for name, probs in digit_probs.items()})
+
     _panels = []
-    for _name, _probs in digit_probs.items():
-        _pi, _points = estimate_pi(_probs, n_points.value)
-        _panels.append(mo.vstack([mo.md(f"**{_name}**  \nπ ≈ **{_pi:.3f}**"), scatter(_points), bars(_probs)]))
+    for _name, _draw in _generators.items():
+        _pi, _points, _digits = estimate_pi(_draw, n_points.value)
+        _counts = {str(d): _digits.count(d) / len(_digits) for d in range(10)}  # what was actually drawn
+        _panels.append(mo.vstack([mo.md(f"**{_name}**  \nπ ≈ **{_pi:.3f}**"), scatter(_points), bars(_counts)]))
     mo.hstack(_panels, widths="equal", gap=1.5)
     return
 
