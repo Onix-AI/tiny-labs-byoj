@@ -524,7 +524,7 @@ def _(json, mo):
             "},",
             f'# Score: "{_asked["urgency"]}"',
             '"urgency": {',
-            f'    "score": {_urgency["score"]},',
+            f'    "score": {_urgency["score"]},  # = 0×P(0) + 1×P(1) + 2×P(2)',
             f'    "probabilities": {json.dumps(_urgency["probabilities"])},',
             "},",
             "```",
