@@ -253,34 +253,75 @@ def _(mo):
     mo.md(r"""
     ## 2. Heads or tails?
 
-    A fair coin should be **50 / 50**. We ask the same question twice, only swapping the order of the options.
+    We ask each model: *"I flip a fair coin. How does it land?"* The honest answer is **50 / 50**.
+
+    Then we ask again with the options **swapped** (tails listed first). That's **2 calls per model**: we read P(heads) straight from the model, no sampling.
+
+    The slider then simulates N flips with each model's P(heads). It's free: no extra calls.
     """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    flip = mo.ui.run_button(label="Flip")
-    flip
-    return (flip,)
+    flip = mo.ui.run_button(label="Ask the models")
+    n_flips = mo.ui.slider(10, 1000, step=10, value=100, label="N flips", show_value=True)
+    mo.hstack([flip, n_flips], justify="start", gap=2)
+    return flip, n_flips
 
 
 @app.cell(hide_code=True)
-def _(Choice, api_model, autorun, bars, flip, mo, run_all):
-    mo.stop(not (flip.value or autorun), mo.md("*Press Flip.*"))
+def _(Choice, api_model, autorun, flip, mo, run_all):
+    mo.stop(not (flip.value or autorun), mo.md("*Press Ask the models.*"))
 
-    _orders = {
-        "heads, tails": Choice("How does it land?", ["heads", "tails"]),
-        "tails, heads": Choice("How does it land?", ["tails", "heads"]),
+    ORDERS = {
+        "heads listed first": Choice("How does it land?", ["heads", "tails"]),
+        "tails listed first": Choice("How does it land?", ["tails", "heads"]),
     }
-    _columns = {}
-    for _order, _choice in _orders.items():
+    p_heads = {}  # {model: {order: P(heads), or an error message}}
+    for _order, _choice in ORDERS.items():
         for _name, (_result, _ms) in run_all("I flip a fair coin.", _choice, api_model.value).items():
-            _probs = {o: _result[o] for o in ("heads", "tails")} if isinstance(_result, dict) else None
-            _columns.setdefault(_name, []).append(
-                mo.vstack([mo.md(f"*options: {_order}*"), bars(_probs) if _probs else mo.md(_result)])
-            )
-    mo.hstack([mo.vstack([mo.md(f"**{_name}**"), *_charts]) for _name, _charts in _columns.items()], widths="equal", gap=2)
+            p_heads.setdefault(_name, {})[_order] = _result["heads"] if isinstance(_result, dict) else _result
+    return ORDERS, p_heads
+
+
+@app.cell(hide_code=True)
+def _(mo, random):
+    def split_bar(p):
+        """Heads (purple) vs tails (grey), with a dashed line at 50%."""
+        heads = f"heads {p:.0%}" if p >= 0.15 else ""
+        tails = f"tails {1 - p:.0%}" if 1 - p >= 0.15 else ""
+        return mo.Html(
+            '<div style="position:relative;display:flex;height:1.8em;border-radius:6px;overflow:hidden;color:white;font-weight:600">'
+            f'<div style="width:{p * 100:.1f}%;background:#a626a4;display:flex;align-items:center;padding-left:0.5em">{heads}</div>'
+            f'<div style="flex:1;background:#9ca3af;display:flex;align-items:center;justify-content:flex-end;padding-right:0.5em">{tails}</div>'
+            '<div style="position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed white"></div>'
+            "</div>"
+        )
+
+
+    def simulate_flips(p, n, seed=0):
+        """Flip a coin that lands heads with probability p, n times; return the number of heads."""
+        rng = random.Random(seed)
+        return sum(rng.random() < p for _ in range(n))
+
+    return simulate_flips, split_bar
+
+
+@app.cell(hide_code=True)
+def _(ORDERS, mo, n_flips, p_heads, simulate_flips, split_bar):
+    def _cell(p):
+        if isinstance(p, str):
+            return mo.md(p)
+        heads = simulate_flips(p, n_flips.value)
+        return mo.vstack([split_bar(p), mo.md(f"{n_flips.value} flips → **{heads}** heads, **{n_flips.value - heads}** tails")])
+
+    _header = mo.hstack([mo.md("**Model**"), *[mo.md(f"**{order}**") for order in ORDERS]], widths=[1, 2, 2], gap=2)
+    _rows = [
+        mo.hstack([mo.md(f"**{name}**"), *[_cell(orders[o]) for o in ORDERS]], widths=[1, 2, 2], gap=2, align="center")
+        for name, orders in p_heads.items()
+    ]
+    mo.vstack([_header, *_rows], gap=1.5)
     return
 
 
