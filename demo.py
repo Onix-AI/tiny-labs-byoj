@@ -226,7 +226,7 @@ def _(mo):
     A fair coin is **50 / 50**. We ask each model *"I flip a fair coin. How does it land?"* twice:
     once with **heads** listed first, once with **tails** first.
 
-    The slider simulates N flips from each answer (no extra calls).
+    The first row is a real fair coin, `random.random() < 0.5`, for comparison. The slider simulates N flips from each answer (no extra calls).
     """)
     return
 
@@ -247,7 +247,8 @@ def _(Choice, api_model, autorun, flip, mo, run_all):
         "heads listed first": Choice("How does it land?", ["heads", "tails"]),
         "tails listed first": Choice("How does it land?", ["tails", "heads"]),
     }
-    p_heads = {}  # {model: {order: P(heads), or an error message}}
+    p_heads = {"random.random() < 0.5": {order: 0.5 for order in ORDERS}}  # a real fair coin, for comparison
+    # then {model: {order: P(heads), or an error message}}
     for _order, _choice in ORDERS.items():
         for _name, (_result, _ms) in run_all("I flip a fair coin.", _choice, api_model.value).items():
             p_heads.setdefault(_name, {})[_order] = _result["heads"] if isinstance(_result, dict) else _result
