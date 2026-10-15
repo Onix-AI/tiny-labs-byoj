@@ -56,7 +56,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(dataclass, math):
     @dataclass
     class Choice:
@@ -86,7 +86,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(OpenAI, math, os, prompt, softmax):
     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ.get("OPENROUTER_API_KEY"))
 
@@ -117,7 +117,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(httpx, os):
     def jev_typesafe(state, choice):
         response = httpx.post(
@@ -152,7 +152,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(AutoModelForCausalLM, AutoTokenizer, torch):
     device = "mps" if torch.backends.mps.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
@@ -160,7 +160,7 @@ def _(AutoModelForCausalLM, AutoTokenizer, torch):
     return device, model, tokenizer
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(device, model, prompt, softmax, tokenizer, torch):
     @torch.no_grad()
     def jev_local(state, choice):
