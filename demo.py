@@ -48,12 +48,138 @@ def _(mo):
     mo.md(r"""
     # Bring Your Own Jev: live demo
 
-    Ask any question about any text. Three models answer with a **probability for every option**,
-    read from a **single token**: an LLM through OpenRouter, the real Jev, and a tiny model running offline on this laptop.
+    Ask any question about any text. Three models answer with a **probability for every option**, read from a **single token**:
+    an LLM through OpenRouter, the real Jev, and a tiny model running offline on this laptop.
+
+    The code comes first (click a cell to open it), then three experiments.
     """)
     return
 
 
+@app.cell(hide_code=True)
+def _(dataclass, math):
+    @dataclass
+    class Choice:
+        instructions: str
+        options: list[str]
+
+
+    def prompt(state: str, choice: Choice) -> str:
+        options = "\n".join(f"{i}) {option}" for i, option in enumerate(choice.options))
+        return f'Message:\n"""\n{state}\n"""\n\n{choice.instructions}\n{options}\n\nAnswer with a single digit.'
+
+
+    def softmax(options: list[str], logits: list[float]) -> dict[str, float]:
+        exps = [math.exp(x) for x in logits]
+        return {option: e / sum(exps) for option, e in zip(options, exps)}
+
+    return Choice, prompt, softmax
+
+
+@app.cell(hide_code=True)
+def _(OpenAI, math, os, prompt, softmax):
+    client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ.get("OPENROUTER_API_KEY"))
+
+
+    def jev_api(state, choice, model="openai/gpt-4o-mini"):
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt(state, choice)}],
+            max_tokens=1,
+            logprobs=True,
+            top_logprobs=20,
+            extra_body={"provider": {"require_parameters": True}},  # only providers that return logprobs
+        )
+        top = {t.token: t.logprob for t in response.choices[0].logprobs.content[0].top_logprobs}
+        logits = [top.get(str(i), -math.inf) for i in range(len(choice.options))]
+        return softmax(choice.options, logits)
+
+    return (jev_api,)
+
+
+@app.cell(hide_code=True)
+def _(httpx, os):
+    def jev_typesafe(state, choice):
+        response = httpx.post(
+            "https://openrouter.ai/api/alpha/decisions",
+            headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
+            json={
+                "model": "~typesafe/jev-latest",
+                "state": state,
+                "questions": {
+                    "answer": {
+                        "type": "choice",
+                        "instructions": choice.instructions,
+                        "criteria": {option: option for option in choice.options},
+                    }
+                },
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()["answers"]["answer"]["probabilities"]
+
+    return (jev_typesafe,)
+
+
+@app.cell(hide_code=True)
+def _(AutoModelForCausalLM, AutoTokenizer, torch):
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
+    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B", dtype=torch.float16).to(device).eval()
+    return device, model, tokenizer
+
+
+@app.cell(hide_code=True)
+def _(device, model, prompt, softmax, tokenizer, torch):
+    @torch.no_grad()
+    def jev_local(state, choice):
+        messages = [{"role": "user", "content": prompt(state, choice)}]
+        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+        inputs = tokenizer(text, return_tensors="pt").to(device)
+
+        next_token_logits = model(**inputs).logits[0, -1]
+        digits = [tokenizer.convert_tokens_to_ids(str(i)) for i in range(len(choice.options))]
+        return softmax(choice.options, next_token_logits[digits].tolist())
+
+    return (jev_local,)
+
+
+@app.cell(hide_code=True)
+def _(jev_api, jev_local, jev_typesafe, mo, time):
+    def run_all(state, choice, api_model):
+        """Run every backend on one decision: {name: (probabilities or error, ms)}."""
+        backends = {
+            "Qwen3-1.7B (offline)": lambda: jev_local(state, choice),
+            api_model: lambda: jev_api(state, choice, api_model),
+            "Jev": lambda: jev_typesafe(state, choice),
+        }
+        results = {}
+        for name, run in backends.items():
+            start = time.perf_counter()
+            try:
+                results[name] = (run(), (time.perf_counter() - start) * 1000)
+            except Exception as e:
+                results[name] = (f"error: {e}", None)
+        return results
+
+
+    def bars(probs):
+        """Probabilities as a small horizontal bar chart."""
+        top = max(probs, key=probs.get)
+        rows = "".join(
+            f'''<div style="display:flex;align-items:center;gap:0.6em;margin:0.2em 0">
+              <div style="width:8em;text-align:right">{option}</div>
+              <div style="flex:1;background:#f3f4f6;border-radius:4px">
+                <div style="width:{p * 100:.1f}%;height:1.2em;border-radius:4px;background:{"#a626a4" if option == top else "#d8b4d8"}"></div>
+              </div>
+              <div style="width:3em;font-weight:700">{p:.0%}</div>
+            </div>'''
+            for option, p in probs.items()
+        )
+        return mo.Html(rows)
+
+    return bars, run_all
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -262,170 +388,6 @@ def _(bars, digit_probs, estimate_pi, from_model, mo, n_points, scatter):
         _panels.append(mo.vstack([mo.md(f"**{_name}**  \nπ ≈ **{_pi:.3f}**"), scatter(_points), bars(_counts)]))
     mo.hstack(_panels, widths="equal", gap=1.5)
     return
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## How it works
-
-    Every model gets the same `Choice` (a question + options) and returns `{option: probability}`.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(dataclass, math):
-    @dataclass
-    class Choice:
-        instructions: str
-        options: list[str]
-
-
-    def prompt(state: str, choice: Choice) -> str:
-        options = "\n".join(f"{i}) {option}" for i, option in enumerate(choice.options))
-        return f'Message:\n"""\n{state}\n"""\n\n{choice.instructions}\n{options}\n\nAnswer with a single digit.'
-
-
-    def softmax(options: list[str], logits: list[float]) -> dict[str, float]:
-        exps = [math.exp(x) for x in logits]
-        return {option: e / sum(exps) for option, e in zip(options, exps)}
-
-    return Choice, prompt, softmax
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Any LLM → Jev
-
-    Ask for **one token**, with its **logprobs**.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(OpenAI, math, os, prompt, softmax):
-    client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ.get("OPENROUTER_API_KEY"))
-
-
-    def jev_api(state, choice, model="openai/gpt-4o-mini"):
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt(state, choice)}],
-            max_tokens=1,
-            logprobs=True,
-            top_logprobs=20,
-            extra_body={"provider": {"require_parameters": True}},  # only providers that return logprobs
-        )
-        top = {t.token: t.logprob for t in response.choices[0].logprobs.content[0].top_logprobs}
-        logits = [top.get(str(i), -math.inf) for i in range(len(choice.options))]
-        return softmax(choice.options, logits)
-
-    return (jev_api,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### The real thing: Jev
-
-    TypeSafe's Jev, through OpenRouter's Decisions API. No prompt, just a typed question.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(httpx, os):
-    def jev_typesafe(state, choice):
-        response = httpx.post(
-            "https://openrouter.ai/api/alpha/decisions",
-            headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
-            json={
-                "model": "~typesafe/jev-latest",
-                "state": state,
-                "questions": {
-                    "answer": {
-                        "type": "choice",
-                        "instructions": choice.instructions,
-                        "criteria": {option: option for option in choice.options},
-                    }
-                },
-            },
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.json()["answers"]["answer"]["probabilities"]
-
-    return (jev_typesafe,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Fully offline: a tiny local model
-
-    One forward pass, then read the logits of the option digits. No generation, no network.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(AutoModelForCausalLM, AutoTokenizer, torch):
-    device = "mps" if torch.backends.mps.is_available() else "cpu"
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B", dtype=torch.float16).to(device).eval()
-    return device, model, tokenizer
-
-
-@app.cell(hide_code=True)
-def _(device, model, prompt, softmax, tokenizer, torch):
-    @torch.no_grad()
-    def jev_local(state, choice):
-        messages = [{"role": "user", "content": prompt(state, choice)}]
-        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
-        inputs = tokenizer(text, return_tensors="pt").to(device)
-
-        next_token_logits = model(**inputs).logits[0, -1]
-        digits = [tokenizer.convert_tokens_to_ids(str(i)) for i in range(len(choice.options))]
-        return softmax(choice.options, next_token_logits[digits].tolist())
-
-    return (jev_local,)
-
-
-@app.cell(hide_code=True)
-def _(jev_api, jev_local, jev_typesafe, mo, time):
-    def run_all(state, choice, api_model):
-        """Run every backend on one decision: {name: (probabilities or error, ms)}."""
-        backends = {
-            "Qwen3-1.7B (offline)": lambda: jev_local(state, choice),
-            api_model: lambda: jev_api(state, choice, api_model),
-            "Jev": lambda: jev_typesafe(state, choice),
-        }
-        results = {}
-        for name, run in backends.items():
-            start = time.perf_counter()
-            try:
-                results[name] = (run(), (time.perf_counter() - start) * 1000)
-            except Exception as e:
-                results[name] = (f"error: {e}", None)
-        return results
-
-
-    def bars(probs):
-        """Probabilities as a small horizontal bar chart."""
-        top = max(probs, key=probs.get)
-        rows = "".join(
-            f'''<div style="display:flex;align-items:center;gap:0.6em;margin:0.2em 0">
-              <div style="width:8em;text-align:right">{option}</div>
-              <div style="flex:1;background:#f3f4f6;border-radius:4px">
-                <div style="width:{p * 100:.1f}%;height:1.2em;border-radius:4px;background:{"#a626a4" if option == top else "#d8b4d8"}"></div>
-              </div>
-              <div style="width:3em;font-weight:700">{p:.0%}</div>
-            </div>'''
-            for option, p in probs.items()
-        )
-        return mo.Html(rows)
-
-    return bars, run_all
 
 
 if __name__ == "__main__":
