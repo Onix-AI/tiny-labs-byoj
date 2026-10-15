@@ -397,7 +397,7 @@ def _(mo):
     mo.vstack(
         [
             mo.md(r"""
-    ## Jev: the TypeSafe API
+    ## What kind of answer?
     """),
             mo.vstack(
                 [
@@ -413,7 +413,7 @@ def _(mo):
                 gap=0.25,
             ),
             mo.md(r"""
-    Note: Jev itself is **closed source**. We see the API, but we don't really know what's **behind** it.
+    Jev set the standard for what the API surface could look like for decision models.
     """),
         ],
         gap=0.75,
