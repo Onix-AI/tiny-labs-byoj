@@ -504,50 +504,40 @@ def _(mo):
     mo.vstack(
         [
             mo.md(r"""
-    ## A real Jev response
+    ## What comes back
 
-    *"Our API integration started returning 500 errors on every request about 20 minutes ago, and we can't process any customer orders until this is fixed."*
+    *"I keep waking up at 3am and can't fall back asleep. Any tips?"*
     """),
             mo.hstack(
                 [
                     mo.md(r"""
     ```python
 
-    "department": {      # Choice
-        "choice": "technical",
-        "confidence": 1.0,
-        "probabilities": {
-            "technical": 1.0,
-            "billing": 0.0,
-            "sales": 0.0,
-        },
+    "is_relevant": {    # Noul
+        "noul": 0.97,
     },
-    "is_urgent": {       # Noul
-        "noul": 0.99,
+    "topic": {          # Choice
+        "choice": "sleep",
+        "probabilities": {"sleep": 0.94, "nutrition": 0.04, "fitness": 0.02},
+    },
+    "urgency": {        # Score
+        "score": 0.33,
+        "probabilities": {"0": 0.70, "1": 0.27, "2": 0.03},
     },
     ```
     """),
                     mo.md(r"""
-    ```python
-
-    "frustration": {     # Score
-        "score": 0.67,
-        "confidence": 0.5,
-        "legend": {
-            "0": "Calm, just stating facts",
-            "1": "Frustrated but civil",
-            "2": "Very angry, strong language",
-        },
-        "probabilities": {"0": 0.33, "1": 0.67, "2": 0.0},
-    },
-    ```
+    - **97%** sure it's about health and wellness: call the bot
+    - It's about **sleep**, and the other options show how close the call was
+    - **Mostly not urgent** (70%)
     """),
                 ],
-                widths=[1, 1.4],
-                gap=1.5,
+                widths=[1.5, 1],
+                align="center",
+                gap=2,
             ),
             mo.md(r"""
-    <small>Example response from the [TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart) (`jev-1.13.0`, 428 input / 73 output tokens)</small>
+    <small>Illustrative output for our health and wellness example, in Jev's response format ([TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart))</small>
     """),
         ],
         gap=0.5,
