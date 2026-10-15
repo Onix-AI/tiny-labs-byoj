@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
+#     "httpx",
 #     "marimo",
 #     "openai",
 #     "python-dotenv",
@@ -28,6 +29,7 @@ def _():
     import os
     import time
 
+    import httpx
     import marimo as mo
     import torch
     from dotenv import load_dotenv
@@ -35,7 +37,7 @@ def _():
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     load_dotenv(mo.notebook_dir() / ".env")  # OPENROUTER_API_KEY from a .env next to this notebook (gitignored)
-    return AutoModelForCausalLM, AutoTokenizer, OpenAI, math, mo, os, time, torch
+    return AutoModelForCausalLM, AutoTokenizer, OpenAI, httpx, math, mo, os, time, torch
 
 
 @app.cell
@@ -108,7 +110,41 @@ def _(LETTERS, OpenAI, build_messages, math, os, time):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 2. Fully offline: a tiny local model
+    ## 2. The real thing: Jev
+
+    TypeSafe's Jev, through OpenRouter's Decisions API. Same key, no prompt: just the state and a typed question.
+    """)
+    return
+
+
+@app.cell
+def _(httpx, os, time):
+    def jev_typesafe(state, question, options, model="~typesafe/jev-latest"):
+        start = time.perf_counter()
+        response = httpx.post(
+            "https://openrouter.ai/api/alpha/decisions",
+            headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY', 'missing')}"},
+            json={
+                "model": model,
+                "state": state,
+                "questions": {
+                    "answer": {"type": "choice", "instructions": question, "criteria": {o: o for o in options}},
+                },
+            },
+            timeout=30,
+        )
+        ms = (time.perf_counter() - start) * 1000
+        response.raise_for_status()
+        probs = response.json()["answers"]["answer"]["probabilities"]
+        return {o: probs[o] for o in options}, ms
+
+    return (jev_typesafe,)
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## 3. Fully offline: a tiny local model
 
     Same prompt, same idea: one forward pass, then read the logits of the option letters.
     """)
@@ -173,7 +209,7 @@ def _(mo):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 3. Try it
+    ## 4. Try it
     """)
     return
 
@@ -185,14 +221,22 @@ def _(mo):
     )
     question = mo.ui.text(value="Is this about health and wellness?", label="Question", full_width=True)
     options = mo.ui.text(value="no, yes", label="Options (comma separated)", full_width=True)
-    api_model = mo.ui.text(value="openai/gpt-4o-mini", label="OpenRouter model")
+    api_model = mo.ui.dropdown(
+        options=[
+            "openai/gpt-4o-mini",
+            "google/gemma-4-31b-it",
+            "anthropic/claude-haiku-5.5",  # closed: no logprobs
+        ],
+        value="openai/gpt-4o-mini",
+        label="LLM via OpenRouter",
+    )
     run = mo.ui.run_button(label="Run")
     mo.vstack([state, question, options, mo.hstack([api_model, run], justify="start")])
     return api_model, options, question, run, state
 
 
 @app.cell
-def _(api_model, bars, jev_api, jev_local, mo, options, question, run, state):
+def _(api_model, bars, jev_api, jev_local, jev_typesafe, mo, options, question, run, state):
     mo.stop(not run.value, mo.md("*Press Run.*"))
 
     _options = [o.strip() for o in options.value.split(",") if o.strip()]
@@ -203,6 +247,11 @@ def _(api_model, bars, jev_api, jev_local, mo, options, question, run, state):
         _panels.append(bars(_api, f"{api_model.value} · {_api_ms:.0f} ms"))
     except Exception as e:
         _panels.append(mo.md(f"**{api_model.value}**: {e}"))
+    try:
+        _jev, _jev_ms = jev_typesafe(state.value, question.value, _options)
+        _panels.append(bars(_jev, f"Jev · {_jev_ms:.0f} ms"))
+    except Exception as e:
+        _panels.append(mo.md(f"**Jev**: {e}"))
     mo.hstack(_panels, widths="equal", gap=3)
     return
 
@@ -210,7 +259,7 @@ def _(api_model, bars, jev_api, jev_local, mo, options, question, run, state):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## 4. Head to head
+    ## 5. Head to head
 
     Some questions have a right answer. Some **can't** have one, and we still get a distribution.
     """)
@@ -235,13 +284,13 @@ def _():
 
 @app.cell
 def _(api_model, mo):
-    run_tasks = mo.ui.run_button(label=f"Run all tasks (Qwen3-1.7B vs {api_model.value})")
+    run_tasks = mo.ui.run_button(label=f"Run all tasks (Qwen3-1.7B vs {api_model.value} vs Jev)")
     run_tasks
     return (run_tasks,)
 
 
 @app.cell
-def _(TASKS, api_model, jev_api, jev_local, mo, run_tasks):
+def _(TASKS, api_model, jev_api, jev_local, jev_typesafe, mo, run_tasks):
     mo.stop(not run_tasks.value)
 
     def _fmt(probs):
@@ -255,6 +304,11 @@ def _(TASKS, api_model, jev_api, jev_local, mo, run_tasks):
             _api_cell, _api_ms_cell = _fmt(_api), f"{_api_ms:.0f}"
         except Exception as e:
             _api_cell, _api_ms_cell = f"error: {e}", "-"
+        try:
+            _jev, _jev_ms = jev_typesafe(_state, _question, _options)
+            _jev_cell, _jev_ms_cell = _fmt(_jev), f"{_jev_ms:.0f}"
+        except Exception as e:
+            _jev_cell, _jev_ms_cell = f"error: {e}", "-"
         _rows.append(
             {
                 "question": f"{_question} ({_state})",
@@ -262,6 +316,8 @@ def _(TASKS, api_model, jev_api, jev_local, mo, run_tasks):
                 "ms (local)": f"{_local_ms:.0f}",
                 api_model.value: _api_cell,
                 "ms (api)": _api_ms_cell,
+                "Jev": _jev_cell,
+                "ms (Jev)": _jev_ms_cell,
             }
         )
     mo.ui.table(_rows, selection=None)
