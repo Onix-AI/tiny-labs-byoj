@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bring Your Own Jev</title>
+<style>
+  :root {
+    /* Anvil tokens: surface-default, foreground, border-subtle, action-secondary */
+    --bg: #FCFAF9;
+    --ink: #000000;
+    --muted: #666666;
+    --card: #FFFFFF;
+    --line: #D1CCCC;
+    --door: #E8E1DE;
+    --door-hover: #DBD1CC;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 var(--mono);
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 16px 56px;
+  }
+  header { text-align: center; margin-bottom: 36px; }
+  header img { width: 96px; height: 96px; border-radius: 16px; }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    letter-spacing: -0.02em;
+    margin: 16px 0 4px;
+  }
+  .tagline { color: var(--muted); margin: 0; }
+
+  /* Big doors: slides, demo, break my jev (code only) */
+  .doors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .door {
+    display: block;
+    padding: 28px 24px;
+    border-radius: 16px;
+    background: var(--door);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform .12s ease, background .12s ease;
+  }
+  .door:hover { transform: translateY(-2px); background: var(--door-hover); }
+  .door .label {
+    font-family: var(--sans);
+    font-size: 1.6rem;
+    font-weight: 650;
+    display: block;
+  }
+  .door .sub { opacity: .75; font-size: .9rem; display: block; }
+  
+  /* Embedded slides and demo */
+  .embed { margin-bottom: 32px; }
+  .embed-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 10px; }
+  .embed-head h2 { font-family: var(--sans); font-size: 1.2rem; font-weight: 650; margin: 0; }
+  .embed-head a { color: var(--muted); font-size: .85rem; }
+  .embed iframe { display: block; width: 100%; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+  .embed.slides iframe { aspect-ratio: 16 / 9; }
+  .embed.demo iframe { height: 80vh; }
+  .door code { font-size: .8rem; background: rgb(0 0 0 / .06); padding: 1px 5px; border-radius: 4px; }
+
+  footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="static/logo.png" alt="Onix Tiny Labs logo">
+    <h1>Bring Your Own Jev</h1>
+    <p class="tagline">Onix Tiny Labs · Montréal · Oct 15, 2026</p>
+  </header>
+
+  <section class="doors">
+    <a class="door" href="static/slides.html">
+      <span class="label">Slides →</span>
+      <span class="sub">The full deck</span>
+    </a>
+    <a class="door" href="static/demo.html">
+      <span class="label">Demo →</span>
+      <span class="sub">Turn any LLM into a Jev, every cell already run</span>
+    </a>
+    <a class="door" href="https://github.com/Onix-AI/tiny-labs-byoj/tree/main/break-my-jev">
+      <span class="label">Break my Jev →</span>
+      <span class="sub">It always says no. Make it say yes. Run it yourself: <code>uv run break-my-jev/app.py</code></span>
+    </a>
+  </section>
+
+  <section class="embed slides">
+    <div class="embed-head"><h2>Slides</h2><a href="static/slides.html">open full screen ↗</a></div>
+    <iframe src="static/slides.html" title="Bring Your Own Jev slides" loading="lazy" allowfullscreen></iframe>
+  </section>
+
+  <section class="embed demo">
+    <div class="embed-head"><h2>Demo</h2><a href="static/demo.html">open full screen ↗</a></div>
+    <iframe src="static/demo.html" title="Bring Your Own Jev demo" loading="lazy"></iframe>
+  </section>
+
+  <footer>Tiny Labs. Building Personal Intelligence®</footer>
+</main>
+</body>
+</html>
