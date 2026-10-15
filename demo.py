@@ -27,6 +27,7 @@ app = marimo.App(width="medium")
 def _():
     import math
     import os
+    import random
     import time
     from dataclasses import dataclass
 
@@ -38,7 +39,7 @@ def _():
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     load_dotenv(mo.notebook_dir() / ".env")  # OPENROUTER_API_KEY, gitignored
-    return AutoModelForCausalLM, AutoTokenizer, OpenAI, dataclass, httpx, math, mo, os, time, torch
+    return AutoModelForCausalLM, AutoTokenizer, OpenAI, dataclass, httpx, math, mo, os, random, time, torch
 
 
 @app.cell
@@ -295,6 +296,79 @@ def _(TASKS, api_model, mo, run_all, run_tasks):
             _row[_name] = _fmt(_result, _ms)
         _rows.append(_row)
     mo.ui.table(_rows, selection=None)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## 6. Can a decision model be random? Estimating π
+
+    Ask for a random digit **once**, then draw points from that distribution: `x = 0.d₁d₂`, `y = 0.d₃d₄`.
+
+    π ≈ 4 × (fraction of points inside the circle). A fair model gives 10% per digit, and π ≈ 3.14.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    pi_state = mo.ui.text(value="Pick a random digit between 0 and 9.", label="State", full_width=True)
+    run_pi = mo.ui.run_button(label="Ask the models")
+    n_points = mo.ui.slider(100, 10000, step=100, value=2000, label="N points", show_value=True)
+    mo.vstack([pi_state, mo.hstack([run_pi, n_points], justify="start", gap=2)])
+    return n_points, pi_state, run_pi
+
+
+@app.cell
+def _(Choice, api_model, mo, pi_state, run_all, run_pi):
+    mo.stop(not run_pi.value, mo.md("*Press Ask the models.*"))
+
+    digit = Choice("Pick a random digit.", [str(i) for i in range(10)])
+    digit_probs = {"Fair die (Python random)": {str(i): 0.1 for i in range(10)}}
+    for _name, (_result, _ms) in run_all(pi_state.value, digit, api_model.value).items():
+        if isinstance(_result, dict):
+            digit_probs[_name] = _result
+    return (digit_probs,)
+
+
+@app.cell
+def _(mo, random):
+    def estimate_pi(probs, n, seed=0):
+        """Draw n points whose digits come from `probs`; return (pi estimate, points)."""
+        rng = random.Random(seed)
+
+        def coordinate():
+            d1, d2 = rng.choices(list(probs), weights=list(probs.values()), k=2)
+            return (int(d1) * 10 + int(d2) + 0.5) / 100
+
+        points = [(coordinate(), coordinate()) for _ in range(n)]
+        inside = sum((x - 0.5) ** 2 + (y - 0.5) ** 2 < 0.25 for x, y in points)
+        return 4 * inside / n, points
+
+
+    def scatter(points, size=180):
+        """Points in the unit square: inside the circle in purple, outside in grey."""
+        dots = "".join(
+            f'<circle cx="{x * size:.1f}" cy="{(1 - y) * size:.1f}" r="1.3" '
+            f'fill="{"#a626a4" if (x - 0.5) ** 2 + (y - 0.5) ** 2 < 0.25 else "#9ca3af"}"/>'
+            for x, y in points[:3000]
+        )
+        return mo.Html(
+            f'<svg width="{size}" height="{size}" style="border:1px solid #e5e7eb">'
+            f'<circle cx="{size / 2}" cy="{size / 2}" r="{size / 2}" fill="none" stroke="#383a42"/>{dots}</svg>'
+        )
+
+    return estimate_pi, scatter
+
+
+@app.cell
+def _(bars, digit_probs, estimate_pi, mo, n_points, scatter):
+    _panels = []
+    for _name, _probs in digit_probs.items():
+        _pi, _points = estimate_pi(_probs, n_points.value)
+        _panels.append(mo.vstack([mo.md(f"**{_name}**  \nπ ≈ **{_pi:.3f}**"), scatter(_points), bars(_probs)]))
+    mo.hstack(_panels, widths="equal", gap=1.5)
     return
 
 
