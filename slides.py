@@ -290,6 +290,41 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    # Announcement banner, synced from Google Slides (page 5). Re-renders when the file is updated.
+    _banner = mo.watch.file("public/figures/jev-announcement.png")
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## What is Jev?
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
+    - A **decision model** from **TypeSafe**: *"unstructured state in, typed probabilistic decisions out"*
+    - They call it a **System One model**: fast, structured decisions that software can use directly
+    - **Closed source**: we get an API, not the weights or the architecture
+    - It **started the hype**: open replications, guides and leaderboards within days
+    """),
+                    mo.image(
+                        _banner.read_bytes(),
+                        style={"max-height": "30cqw", "width": "auto", "max-width": "100%", "border-radius": "8px"},
+                    ),
+                ],
+                widths=[1.2, 1],
+                align="center",
+                gap=2,
+            ),
+            mo.md(r"""
+    <small>Source: [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), TypeSafe</small>
+    """),
+        ],
+        gap=0.75,
+    )
+    return
+
+
+@app.cell
+def _(mo):
     def decision_flow(stage):
         """The "when to use a decision model" flowchart, revealed in stages.
 
@@ -362,7 +397,7 @@ def _(mo):
     mo.vstack(
         [
             mo.md(r"""
-    ## Jev: the TypeSafe API
+    ## What kind of answer?
     """),
             mo.vstack(
                 [
@@ -378,7 +413,7 @@ def _(mo):
                 gap=0.25,
             ),
             mo.md(r"""
-    Note: Jev itself is **closed source**. We see the API, but we don't really know what's **behind** it.
+    Jev set the standard for what the API surface could look like for decision models.
     """),
         ],
         gap=0.75,
@@ -466,30 +501,82 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## What comes back
+
+    *"I keep waking up at 3am and can't fall back asleep. Any tips?"*
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
+    ```python
+
+    "is_relevant": {    # Noul
+        "noul": 0.97,
+    },
+    "topic": {          # Choice
+        "choice": "sleep",
+        "probabilities": {"sleep": 0.94, "nutrition": 0.04, "fitness": 0.02},
+    },
+    "urgency": {        # Score
+        "score": 0.33,
+        "probabilities": {"0": 0.70, "1": 0.27, "2": 0.03},
+    },
+    ```
+    """),
+                    mo.md(r"""
+    - **97%** sure it's about health and wellness: call the bot
+    - It's about **sleep**, and the other options show how close the call was
+    - **Mostly not urgent** (70%)
+    """),
+                ],
+                widths=[1.5, 1],
+                align="center",
+                gap=2,
+            ),
+            mo.md(r"""
+    <small>Illustrative output for our health and wellness example, in Jev's response format ([TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart))</small>
+    """),
+        ],
+        gap=0.5,
+    )
+    return
+
+
+@app.cell
+def _(mo):
     # Full-slide image, synced from Google Slides (page 3). Re-renders when the file is updated.
     _slide = mo.watch.file("public/figures/encoder-vs-decoder.png")
     mo.vstack(
         [
             mo.md(r"""
     ## Model architecture
-
-    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train. LLMs need a **decoder** to generate. Both are transformers.
     """),
-            mo.vstack(
+            mo.hstack(
                 [
+                    mo.md(r"""
+    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train.
+
+    LLMs need a **decoder** to generate.
+
+    Both are transformers.
+    """),
                     mo.image(
                         _slide.read_bytes(),
-                        style={"max-height": "44cqw", "width": "auto", "max-width": "100%"},
+                        style={"max-height": "40cqw", "width": "auto", "max-width": "100%"},
                     ),
-                    mo.md(r"""
+                ],
+                widths=[1, 2.6],
+                align="center",
+                gap=1.5,
+            ),
+            mo.md(r"""
     <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
     """),
-                ],
-                align="center",
-                gap=0.25,
-            ),
         ],
-        gap=0.5,
+        gap=0.25,
     )
     return
 
@@ -563,6 +650,22 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    ## Where decision models might fail
+
+    They're still **smaller models**, with a weaker **world model**:
+
+    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
+    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
+    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+
+    So how good are the open ones?
+    """)
+    return
+
+
+@app.cell
 def _(base64, mo):
     # Leaderboard screenshot (cropped to the chart); clicking it opens the live page.
     _img = base64.b64encode(mo.watch.file("public/figures/jev-decision-index.png").read_bytes()).decode()
@@ -586,18 +689,21 @@ def _(base64, mo):
     )
     return
 
+
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## Where decision models might fail
+    ## Bring your own Jev
 
-    They're still **smaller models**, with a weaker **world model**:
+    Two ways to build one, live:
 
-    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
-    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
-    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+    1. **Any LLM → Jev**: structured output + logprobs, through OpenRouter
+        - Caveat: not every model exposes logprobs today, **especially closed models**
+    2. **A tiny local model, fully offline**: read the answer straight off the logits of a small Qwen
 
-    Let's find out. **Demo time.**
+    Then we throw some questions at them and see how they do.
+
+    **Demo time.**
     """)
     return
 
