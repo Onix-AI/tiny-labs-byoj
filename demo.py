@@ -222,7 +222,7 @@ def _(mo):
     question = mo.ui.text(value="Is this about health and wellness?", label="Question", full_width=True)
     options = mo.ui.text(value="no, yes", label="Options", full_width=True)
     api_model = mo.ui.dropdown(
-        ["openai/gpt-4o-mini", "google/gemma-4-31b-it", "anthropic/claude-haiku-5.5"],
+        ["openai/gpt-4o-mini", "google/gemma-4-31b-it"],
         value="openai/gpt-4o-mini",
         label="LLM",
     )
@@ -274,7 +274,7 @@ def _(Choice):
 
 @app.cell
 def _(mo):
-    run_tasks = mo.ui.run_button(label="Run all")
+    run_tasks = mo.ui.run_button(label="Run all (live)")
     run_tasks
     return (run_tasks,)
 
