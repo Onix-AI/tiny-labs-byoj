@@ -17,7 +17,7 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -127,7 +127,6 @@ with db() as conn:
     )
 
 app = FastAPI()
-last_seen: dict[str, float] = {}  # ip|name -> last submit time (the venue wifi may NAT everyone to one ip)
 
 
 class Attempt(BaseModel):
@@ -142,13 +141,8 @@ def index():
 
 
 @app.post("/api/attempt")
-def attempt(body: Attempt, request: Request):
-    ip = request.headers.get("x-forwarded-for", request.client.host).split(",")[0].strip()
+def attempt(body: Attempt):
     now = time.time()
-    who = f"{ip}|{body.name.strip().lower()}"
-    if now - last_seen.get(who, 0) < 3:
-        raise HTTPException(429, "Slow down: one attempt every 3 seconds.")
-    last_seen[who] = now
     try:
         p_yes = ask(body.tier, body.prompt)
     except Exception as e:
