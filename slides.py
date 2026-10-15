@@ -24,11 +24,12 @@ app = marimo.App(
 @app.cell
 def _():
     import base64
+    import json
     import math
 
     import marimo as mo
 
-    return base64, math, mo
+    return base64, json, math, mo
 
 
 @app.cell
@@ -482,7 +483,7 @@ def _(mo):
 
     response.nouls["is_relevant"].noul    # 0.97
     response.choices["topic"].choice      # "sleep"
-    response.scores["urgency"].score      # 0.33
+    response.scores["urgency"].score      # 0.26
     ```
     """),
                 ],
@@ -500,45 +501,52 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _(json, mo):
+    # A real Jev call, saved from OpenRouter's Decisions API. Re-renders when the file is updated.
+    _result = json.loads(mo.watch.file("public/results/jev-3am.json").read_text())
+    _response = _result["response"]
+    _relevant, _topic, _urgency = (_response["answers"][k] for k in ("is_relevant", "topic", "urgency"))
+    _level = max(_urgency["probabilities"], key=_urgency["probabilities"].get)
+
+    _code = "\n".join(
+        [
+            "```python",
+            "",
+            '"is_relevant": {    # Noul',
+            f'    "noul": {_relevant["noul"]},',
+            "},",
+            '"topic": {          # Choice',
+            f'    "choice": "{_topic["choice"]}",',
+            f'    "probabilities": {json.dumps(_topic["probabilities"])},',
+            "},",
+            '"urgency": {        # Score',
+            f'    "score": {_urgency["score"]},',
+            f'    "probabilities": {json.dumps(_urgency["probabilities"])},',
+            "},",
+            "```",
+        ]
+    )
+    _reading = "\n".join(
+        [
+            f"- **{_relevant['noul']:.0%}** sure it's about health and wellness: call the bot",
+            f"- It's about **{_topic['choice']}** ({_topic['probabilities'][_topic['choice']]:.0%})",
+            f"- Mostly **{_urgency['legend'][_level]}** ({_urgency['probabilities'][_level]:.0%})",
+        ]
+    )
+
     mo.vstack(
         [
-            mo.md(r"""
-    ## What comes back
+            mo.md(f"""
+## What comes back
 
-    *"I keep waking up at 3am and can't fall back asleep. Any tips?"*
-    """),
-            mo.hstack(
-                [
-                    mo.md(r"""
-    ```python
-
-    "is_relevant": {    # Noul
-        "noul": 0.97,
-    },
-    "topic": {          # Choice
-        "choice": "sleep",
-        "probabilities": {"sleep": 0.94, "nutrition": 0.04, "fitness": 0.02},
-    },
-    "urgency": {        # Score
-        "score": 0.33,
-        "probabilities": {"0": 0.70, "1": 0.27, "2": 0.03},
-    },
-    ```
-    """),
-                    mo.md(r"""
-    - **97%** sure it's about health and wellness: call the bot
-    - It's about **sleep**, and the other options show how close the call was
-    - **Mostly not urgent** (70%)
-    """),
-                ],
-                widths=[1.5, 1],
-                align="center",
-                gap=2,
+*"{_result["request"]["state"]}"*
+"""),
+            mo.hstack([mo.md(_code), mo.md(_reading)], widths=[1.5, 1], align="center", gap=2),
+            mo.md(
+                f"<small>Real response from `{_response['model']}` via OpenRouter's Decisions API "
+                f"({_result['latency_ms']} ms, ${_response['usage']['cost']:.6f}, {_result['date']}). "
+                f"Raw: <code>public/results/jev-3am.json</code></small>"
             ),
-            mo.md(r"""
-    <small>Illustrative output for our health and wellness example, in Jev's response format ([TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart))</small>
-    """),
         ],
         gap=0.5,
     )
