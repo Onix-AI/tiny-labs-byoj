@@ -290,6 +290,21 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.md(r"""
+    ## What is Jev?
+
+    - A **decision model** from **TypeSafe**: *"unstructured state in, typed probabilistic decisions out"*
+    - They call it a **System One model**: fast, structured decisions that software can use directly
+    - **Closed source**: we get an API, not the weights or the architecture
+    - It **started the hype**: open replications, guides and leaderboards within days
+
+    <small>Source: [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), TypeSafe</small>
+    """)
+    return
+
+
+@app.cell
+def _(mo):
     def decision_flow(stage):
         """The "when to use a decision model" flowchart, revealed in stages.
 
@@ -466,30 +481,92 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.vstack(
+        [
+            mo.md(r"""
+    ## A real Jev response
+
+    *"Our API integration started returning 500 errors on every request about 20 minutes ago, and we can't process any customer orders until this is fixed."*
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
+    ```python
+
+    "department": {      # Choice
+        "choice": "technical",
+        "confidence": 1.0,
+        "probabilities": {
+            "technical": 1.0,
+            "billing": 0.0,
+            "sales": 0.0,
+        },
+    },
+    "is_urgent": {       # Noul
+        "noul": 0.99,
+    },
+    ```
+    """),
+                    mo.md(r"""
+    ```python
+
+    "frustration": {     # Score
+        "score": 0.67,
+        "confidence": 0.5,
+        "legend": {
+            "0": "Calm, just stating facts",
+            "1": "Frustrated but civil",
+            "2": "Very angry, strong language",
+        },
+        "probabilities": {"0": 0.33, "1": 0.67, "2": 0.0},
+    },
+    ```
+    """),
+                ],
+                widths=[1, 1.4],
+                gap=1.5,
+            ),
+            mo.md(r"""
+    <small>Example response from the [TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart) (`jev-1.13.0`, 428 input / 73 output tokens)</small>
+    """),
+        ],
+        gap=0.5,
+    )
+    return
+
+
+@app.cell
+def _(mo):
     # Full-slide image, synced from Google Slides (page 3). Re-renders when the file is updated.
     _slide = mo.watch.file("public/figures/encoder-vs-decoder.png")
     mo.vstack(
         [
             mo.md(r"""
     ## Model architecture
-
-    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train. LLMs need a **decoder** to generate. Both are transformers.
     """),
-            mo.vstack(
+            mo.hstack(
                 [
+                    mo.md(r"""
+    A decision model can be "just" a **BERT-style encoder**: smaller and easier to train.
+
+    LLMs need a **decoder** to generate.
+
+    Both are transformers.
+    """),
                     mo.image(
                         _slide.read_bytes(),
-                        style={"max-height": "44cqw", "width": "auto", "max-width": "100%"},
+                        style={"max-height": "40cqw", "width": "auto", "max-width": "100%"},
                     ),
-                    mo.md(r"""
+                ],
+                widths=[1, 2.6],
+                align="center",
+                gap=1.5,
+            ),
+            mo.md(r"""
     <small>Figures adapted from Sebastian Raschka, [Language Models for Text Classification: From Bag-of-Words to Jev](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) (originals: BERT, Devlin et al. 2019; Transformer, Vaswani et al. 2017)</small>
     """),
-                ],
-                align="center",
-                gap=0.25,
-            ),
         ],
-        gap=0.5,
+        gap=0.25,
     )
     return
 
@@ -563,6 +640,22 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    ## Where decision models might fail
+
+    They're still **smaller models**, with a weaker **world model**:
+
+    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
+    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
+    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+
+    So how good are the open ones?
+    """)
+    return
+
+
+@app.cell
 def _(base64, mo):
     # Leaderboard screenshot (cropped to the chart); clicking it opens the live page.
     _img = base64.b64encode(mo.watch.file("public/figures/jev-decision-index.png").read_bytes()).decode()
@@ -586,18 +679,21 @@ def _(base64, mo):
     )
     return
 
+
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## Where decision models might fail
+    ## Bring your own Jev
 
-    They're still **smaller models**, with a weaker **world model**:
+    Two ways to build one, live:
 
-    - **Ambiguous, long-context reasoning**: read a whole murder mystery novel, *who is the murderer?*
-    - **Stochastic events**: *"Will it rain 3 weeks from now?"*
-    - **Calibration**: *"Simulate a coin flip / a skewed die"*, ask 1,000 times: do the probabilities match?
+    1. **Any LLM → Jev**: structured output + logprobs, through OpenRouter
+        - Caveat: not every model exposes logprobs today, **especially closed models**
+    2. **A tiny local model, fully offline**: read the answer straight off the logits of a small Qwen
 
-    Let's find out. **Demo time.**
+    Then we throw some questions at them and see how they do.
+
+    **Demo time.**
     """)
     return
 
