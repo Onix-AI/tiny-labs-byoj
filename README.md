@@ -6,9 +6,11 @@ Presentation given by [Tiny Labs](https://onix.life/labs/) at Onix HQ on October
 
 Presented by Jeremy Pinto ([@jerpint](https://github.com/jerpint))
 
-- [Slides](slides.py)
-- [Demo](demo.py)
+- [Slides](static/slides.html)
+- [Demo](static/demo.html), with every cell already run
 - [Break My Jev](break-my-jev/)
+
+The slides and the demo are self-contained HTML pages: download one and open it in a browser.
 
 # Agents
 
@@ -65,3 +67,13 @@ uv run break-my-jev/app.py   # http://localhost:2730
 Pick a model (Gemma 4 31B, GPT-4o-mini or Jev), write any message, and see P(yes). Every attempt shows up on a live public feed; anything over 50% goes on the winners board. Attempts are stored in `break-my-jev/breakjev.db` (SQLite; delete it to reset).
 
 Hosting it for a room? Set `BREAKJEV_ADMIN_TOKEN` in `.env` to get a kill switch: `/api/admin/pause`, `/api/admin/resume` and `/api/admin/delete?name=...`, each with `?token=...`.
+
+## Static exports
+
+`static/slides.html` and `static/demo.html` are snapshots of `slides.py` and `demo.py`. After any change to either notebook, rebuild them and commit the result:
+
+```bash
+./export.sh
+```
+
+The demo export runs every cell for real, so it needs the OpenRouter key and the Qwen download.
