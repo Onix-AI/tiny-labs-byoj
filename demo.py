@@ -86,18 +86,21 @@ def _(LETTERS, OpenAI, build_messages, math, os, time):
             max_tokens=1,
             logprobs=True,
             top_logprobs=20,
+            extra_body={"provider": {"require_parameters": True}},  # only route to providers that return logprobs
         )
         ms = (time.perf_counter() - start) * 1000
 
         logprobs = response.choices[0].logprobs
-        if logprobs is None:
+        if logprobs is None or not logprobs.content:
             raise ValueError(f"{model} returned no logprobs")
-        top = {t.token.strip(): t.logprob for t in logprobs.content[0].top_logprobs}
 
-        letters = LETTERS[: len(options)]
-        probs = [math.exp(top[l]) if l in top else 0.0 for l in letters]
-        total = sum(probs) or 1.0
-        return {o: p / total for o, p in zip(options, probs)}, ms
+        # "A" and " A" are different tokens for the same answer: add them up
+        probs = {l: 0.0 for l in LETTERS[: len(options)]}
+        for t in logprobs.content[0].top_logprobs:
+            if t.token.strip() in probs:
+                probs[t.token.strip()] += math.exp(t.logprob)
+        total = sum(probs.values()) or 1.0
+        return {o: p / total for o, p in zip(options, probs.values())}, ms
 
     return (jev_api,)
 
