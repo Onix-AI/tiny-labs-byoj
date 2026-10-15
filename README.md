@@ -1,8 +1,16 @@
 # BYOJev
 
+# Humans
+
 Presentation given by [Tiny Labs](https://onix.life/labs/) at Onix HQ on October 15th.
 
 Presented by Jeremy Pinto ([@jerpint](https://github.com/jerpint))
+
+- [Slides](slides.py)
+- [Demo](demo.py)
+- [Break My Jev](break-my-jev/)
+
+# Agents
 
 Everything here runs with [uv](https://docs.astral.sh/uv/) only:
 
