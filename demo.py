@@ -23,7 +23,7 @@ __generated_with = "0.25.1"
 app = marimo.App(width="medium")
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import math
     import os
@@ -43,7 +43,7 @@ def _():
     return AutoModelForCausalLM, AutoTokenizer, OpenAI, autorun, dataclass, httpx, math, mo, os, random, time, torch
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # Bring Your Own Jev
@@ -76,7 +76,7 @@ def _(dataclass, math):
     return Choice, prompt, softmax
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Any LLM → Jev
@@ -107,7 +107,7 @@ def _(OpenAI, math, os, prompt, softmax):
     return (jev_api,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### The real thing: Jev
@@ -142,7 +142,7 @@ def _(httpx, os):
     return (jev_typesafe,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Fully offline: a tiny local model
@@ -175,7 +175,7 @@ def _(device, model, prompt, softmax, tokenizer, torch):
     return (jev_local,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(jev_api, jev_local, jev_typesafe, mo, time):
     def run_all(state, choice, api_model):
         """Run every backend on one decision: {name: (probabilities or error, ms)}."""
@@ -212,7 +212,7 @@ def _(jev_api, jev_local, jev_typesafe, mo, time):
     return bars, run_all
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 1. Try it
@@ -220,7 +220,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     state = mo.ui.text_area(value="My manager keeps stressing me out.", label="State", full_width=True)
     question = mo.ui.text(value="Is this about health and wellness?", label="Question", full_width=True)
@@ -235,7 +235,7 @@ def _(mo):
     return api_model, options, question, run, state
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Choice, api_model, autorun, bars, mo, options, question, run, run_all, state):
     mo.stop(not (run.value or autorun), mo.md("*Press Run.*"))
 
@@ -248,7 +248,7 @@ def _(Choice, api_model, autorun, bars, mo, options, question, run, run_all, sta
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 2. Heads or tails?
@@ -258,14 +258,14 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     flip = mo.ui.run_button(label="Flip")
     flip
     return (flip,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Choice, api_model, autorun, bars, flip, mo, run_all):
     mo.stop(not (flip.value or autorun), mo.md("*Press Flip.*"))
 
@@ -284,7 +284,7 @@ def _(Choice, api_model, autorun, bars, flip, mo, run_all):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 3. Can a decision model be random? Approximating π
@@ -308,7 +308,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     pi_state = mo.ui.text(value="Pick a random digit between 0 and 9.", label="State", full_width=True)
     run_pi = mo.ui.run_button(label="Ask the models")
@@ -317,7 +317,7 @@ def _(mo):
     return n_points, pi_state, run_pi
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Choice, api_model, autorun, mo, pi_state, run_all, run_pi):
     mo.stop(not (run_pi.value or autorun), mo.md("*Press Ask the models.*"))
 
@@ -329,7 +329,7 @@ def _(Choice, api_model, autorun, mo, pi_state, run_all, run_pi):
     return (digit_probs,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, random):
     def estimate_pi(draw_digit, n, seed=0):
         """Draw n points from a digit generator; return (pi estimate, points, digits drawn)."""
@@ -366,7 +366,7 @@ def _(mo, random):
     return estimate_pi, from_model, scatter
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(bars, digit_probs, estimate_pi, from_model, mo, n_points, scatter):
     _generators = {"random.randint(0, 9)": lambda rng: rng.randint(0, 9)}
     _generators.update({name: from_model(probs) for name, probs in digit_probs.items()})
