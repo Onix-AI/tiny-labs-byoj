@@ -1,4 +1,7 @@
 <script>
+  // 0. Open on the first slide: the deck only shows it when the URL ends in #/0.
+  if (!location.hash) history.replaceState(null, "", location.href + "#/0");
+
   // 1. Slide numbers (1, 2, 3, ... in Space order, sub-slides included) in the
   //    bottom-left corner, so slides can be referred to by number.
   // 2. Shrink-to-fit: a slide whose content is taller than the frame is scaled
