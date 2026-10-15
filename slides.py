@@ -290,16 +290,36 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    mo.md(r"""
+    # Announcement banner, synced from Google Slides (page 5). Re-renders when the file is updated.
+    _banner = mo.watch.file("public/figures/jev-announcement.png")
+    mo.vstack(
+        [
+            mo.md(r"""
     ## What is Jev?
-
+    """),
+            mo.hstack(
+                [
+                    mo.md(r"""
     - A **decision model** from **TypeSafe**: *"unstructured state in, typed probabilistic decisions out"*
     - They call it a **System One model**: fast, structured decisions that software can use directly
     - **Closed source**: we get an API, not the weights or the architecture
     - It **started the hype**: open replications, guides and leaderboards within days
-
+    """),
+                    mo.image(
+                        _banner.read_bytes(),
+                        style={"max-height": "30cqw", "width": "auto", "max-width": "100%", "border-radius": "8px"},
+                    ),
+                ],
+                widths=[1.2, 1],
+                align="center",
+                gap=2,
+            ),
+            mo.md(r"""
     <small>Source: [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), TypeSafe</small>
-    """)
+    """),
+        ],
+        gap=0.75,
+    )
     return
 
 
