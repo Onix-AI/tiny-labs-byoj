@@ -220,7 +220,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    state = mo.ui.text_area(value="I keep waking up at 3am and can't fall back asleep. Any tips?", label="State", full_width=True)
+    state = mo.ui.text_area(value="My manager keeps stressing me out.", label="State", full_width=True)
     question = mo.ui.text(value="Is this about health and wellness?", label="Question", full_width=True)
     options = mo.ui.text(value="no, yes", label="Options", full_width=True)
     api_model = mo.ui.dropdown(
