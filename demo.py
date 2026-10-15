@@ -270,10 +270,9 @@ def _(mo, random):
         )
 
 
-    def simulate_flips(p, n, seed=0):
+    def simulate_flips(p, n):
         """Flip a coin that lands heads with probability p, n times; return the number of heads."""
-        rng = random.Random(seed)
-        return sum(rng.random() < p for _ in range(n))
+        return sum(random.random() < p for _ in range(n))
 
     return simulate_flips, split_bar
 
