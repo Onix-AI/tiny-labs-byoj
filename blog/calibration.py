@@ -32,8 +32,10 @@ Backends:
   jev       Jev via the OpenRouter Decisions API
   onejev    OneJev1.5-9B, local, with the model's own qev engine
   clef      Cloudflare clef-flash (9B), local, with the model's own joint_schema_model.py
+  clef27b   Cloudflare clef (27B) via Workers AI
 
-gpt and jev need OPENROUTER_API_KEY (in .env or the environment). The local models download
+gpt and jev need OPENROUTER_API_KEY, clef27b needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN
+(a token with Workers AI permission), in .env or the environment. The local models download
 ~3.4 GB (Qwen) and ~19 GB each (OneJev, clef-flash) and run one at a time, on CUDA, Apple Silicon
 (mps) or CPU. The hosted models can change behind the API, so their numbers may drift a little.
 """
@@ -183,8 +185,24 @@ def clef():
     return ask
 
 
+def clef27b():
+    url = f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/ai/run/@cf/cloudflare/clef"
+
+    def ask(state, instructions, options):
+        response = httpx.post(
+            url,
+            headers={"Authorization": f"Bearer {os.environ['CLOUDFLARE_API_TOKEN']}"},
+            json=request(state, instructions, options, "clef"),
+            timeout=120,
+        )
+        response.raise_for_status()
+        return response.json()["result"]["answers"]["answer"]["probabilities"]
+
+    return ask
+
+
 BACKENDS = {"qwen": ("Qwen3-1.7B", qwen), "gpt": ("GPT-4o mini", gpt), "jev": ("Jev", jev),
-            "onejev": ("OneJev1.5-9B", onejev), "clef": ("Clef-Flash", clef)}
+            "onejev": ("OneJev1.5-9B", onejev), "clef": ("Clef-Flash", clef), "clef27b": ("Clef", clef27b)}
 
 
 def main():
